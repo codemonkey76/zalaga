@@ -1,13 +1,21 @@
 const std = @import("std");
 const engine = @import("engine");
 
+const SpriteId = enum {
+    player_idle,
+};
+
 pub const Assets = struct {
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator, ctx: *engine.Context) !Assets {
-        // ctx.assets.loadTexture("assets/sprites/sprites.png");
-        _ = ctx;
-        _ = allocator;
+        const texture = try ctx.assets.loadTexture("textures/spritesheet.png");
+
+        var builder = engine.graphics.SpriteLayoutBuilder(SpriteId).init(allocator, texture);
+        try builder.addSprite(.player_idle, 0, 0, 16, 16);
+        const layout = builder.build();
+        _ = layout;
+
         return .{};
     }
 

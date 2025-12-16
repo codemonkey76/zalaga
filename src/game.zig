@@ -30,6 +30,8 @@ pub const Game = struct {
             .width = 1280,
             .height = 720,
             .target_fps = 60,
+            .log_level = .warning,
+            .asset_root = "assets",
         });
     }
 
