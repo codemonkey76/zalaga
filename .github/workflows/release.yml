@@ -38,7 +38,6 @@ jobs:
 
       - name: Build for zalaga for ${{ matrix.target }}
         run: |
-          cd zalaga
           if [ "${{ matrix.target }}" == "x86_64-linux" ]; then
             zig build -Doptimize=ReleaseSmall
           else
@@ -49,13 +48,13 @@ jobs:
         run: |
           mkdir -p releases/zalaga-temp
           if [ "${{ matrix.target }}" == "x86_64-windows" ]; then
-            cp zalaga/zig-out/bin/zalaga.exe releases/zalaga-temp/
+            cp zig-out/bin/zalaga.exe releases/zalaga-temp/
           else
-            cp zalaga/zig-out/bin/zalaga releases/zalaga-temp/
+            cp zig-out/bin/zalaga releases/zalaga-temp/
           fi
           # Copy assets - zalaga will need this
-          if [ -d "zalaga/zig-out/bin/assets" ]; then
-            cp -r zalaga/zig-out/bin/assets releases/zalaga-temp/
+          if [ -d "zig-out/bin/assets" ]; then
+            cp -r zig-out/bin/assets releases/zalaga-temp/
           fi
           cd releases/zalaga-temp
           if [ "${{ matrix.target }}" == "x86_64-windows" ]; then
