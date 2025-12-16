@@ -1,0 +1,19 @@
+.{
+    .name = .zalaga,
+    .version = "0.0.0",
+    .fingerprint = 0x97c594fbec6ab5bb,
+    .minimum_zig_version = "0.15.2",
+    .dependencies = .{
+        .arcade_lib = .{
+            .path = "../arcade-lib",
+        },
+        .engine = .{
+            .path = "../engine",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
