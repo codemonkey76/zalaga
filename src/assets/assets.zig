@@ -5,7 +5,8 @@ pub const Assets = struct {
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator, ctx: *engine.Context) !Assets {
-        ctx.assets.loadTexture("assets/sprites/sprites.png");
+        // ctx.assets.loadTexture("assets/sprites/sprites.png");
+        _ = ctx;
         _ = allocator;
         return .{};
     }
@@ -16,6 +17,7 @@ pub const Assets = struct {
     }
 
     fn loadSprites(self: *const Self) void {
-        self.assets.loadSprite()
+        _ = self;
+        // self.assets.loadSprite();
     }
 };
