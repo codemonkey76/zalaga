@@ -9,8 +9,8 @@
             .hash = "arcade_lib-0.0.0-1ZgfDrxdAAANETKPatEdaaTYcoU8-vly-aGze16F9oTv",
         },
         .engine = .{
-            .url = "git+https://github.com/codemonkey76/zig-arcade-engine?ref=main#2b27f8184036be24603cbd3436b33d10850b896c",
-            .hash = "engine-0.0.0-Ml0uK1JPAACC3Kg4Eaedo5e8gNBwqi5-yykm_WYfo0nm",
+            .url = "git+https://github.com/codemonkey76/zig-arcade-engine?ref=main#3fc514b9f02507eb3ed5db044581db592313df7a",
+            .hash = "engine-0.0.0-Ml0uK_lPAAC3MGBqJD9qhmbnCFGkHW7d_7MRiNXItQx5",
         },
     },
     .paths = .{

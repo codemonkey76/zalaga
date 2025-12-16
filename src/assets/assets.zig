@@ -15,7 +15,7 @@ pub const Assets = struct {
         _ = ctx;
     }
 
-    fn loadSprites(self: *const Self) {
+    fn loadSprites(self: *const Self) void {
         self.assets.loadSprite()
     }
 };
