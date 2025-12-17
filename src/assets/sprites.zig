@@ -4,7 +4,7 @@ const SpriteLayoutBuilder = engine.graphics.SpriteLayoutBuilder;
 const SpriteLayout = engine.graphics.SpriteLayout;
 const RotationSet = engine.graphics.RotationSet;
 const RotationFrame = engine.graphics.RotationFrame;
-const Texture = engine.types.Texture;
+const Texture = engine.graphics.Texture;
 
 pub const SpriteType = enum {
     player,

@@ -20,27 +20,30 @@ pub const Hud = struct {
     }
 
     pub fn draw(_: *Self, ctx: *engine.Context, state: *const GameState) !void {
-        var buf: [16]u8 = undefined;
-        ctx.renderer.drawTextGrid("   1UP", .{ .col = 0, .row = 0 }, Color.red);
+        _ = ctx;
+        _ = state;
+        // TODO: Text drawing methods need to be implemented in engine
+        // var buf: [16]u8 = undefined;
+        // ctx.renderer.drawTextGrid("   1UP", .{ .col = 0, .row = 0 }, Color.red);
 
-        const p1_score = if (state.player1) |p1| p1.score else state.last_player1_score;
-        const p1_score_str = try formatScore(p1_score, &buf);
-        ctx.renderer.drawTextGrid(p1_score_str, .{ .col = 0, .row = 1 }, Color.white);
+        // const p1_score = if (state.player1) |p1| p1.score else state.last_player1_score;
+        // const p1_score_str = try formatScore(p1_score, &buf);
+        // ctx.renderer.drawTextGrid(p1_score_str, .{ .col = 0, .row = 1 }, Color.white);
 
-        // Player 2 score
-        ctx.renderer.drawTextGridAnchored("2UP ", .{ .col = 0, .row = 0 }, Color.red, .top_right);
+        // // Player 2 score
+        // ctx.renderer.drawTextGridAnchored("2UP ", .{ .col = 0, .row = 0 }, Color.red, .top_right);
 
-        const p2_score = if (state.player2) |p2| p2.score else state.last_player2_score;
-        const p2_score_str = try formatScore(p2_score, &buf);
-        ctx.renderer.drawTextGridAnchored(p2_score_str, .{ .col = 0, .row = 1 }, Color.white, .top_right);
+        // const p2_score = if (state.player2) |p2| p2.score else state.last_player2_score;
+        // const p2_score_str = try formatScore(p2_score, &buf);
+        // ctx.renderer.drawTextGridAnchored(p2_score_str, .{ .col = 0, .row = 1 }, Color.white, .top_right);
 
-        // High score
-        ctx.renderer.drawTextGridCentered("HIGH-SCORE", 0, Color.red);
-        const hs_str = try formatScore(state.high_score, &buf);
-        ctx.renderer.drawTextGridCentered(hs_str, 1, Color.white);
+        // // High score
+        // ctx.renderer.drawTextGridCentered("HIGH-SCORE", 0, Color.red);
+        // const hs_str = try formatScore(state.high_score, &buf);
+        // ctx.renderer.drawTextGridCentered(hs_str, 1, Color.white);
 
-        const credit_str = try std.fmt.bufPrintZ(&buf, "CREDITS {d}", .{state.credits});
-        ctx.renderer.drawTextGridAnchored(credit_str, .{ .col = 0, .row = 0 }, Color.white, .bottom_left);
+        // const credit_str = try std.fmt.bufPrintZ(&buf, "CREDITS {d}", .{state.credits});
+        // ctx.renderer.drawTextGridAnchored(credit_str, .{ .col = 0, .row = 0 }, Color.white, .bottom_left);
     }
 
     pub fn update(self: *Self, ctx: *engine.Context, dt: f32) !void {
