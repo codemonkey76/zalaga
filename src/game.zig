@@ -29,9 +29,11 @@ pub const Game = struct {
             .title = "Zalaga",
             .width = 1280,
             .height = 720,
-            .target_fps = 60,
+            .target_fps = 155,
             .log_level = .warning,
             .asset_root = "assets",
+            .font_path = "assets/fonts/Cousine-Regular.ttf",
+            .font_size = 11.0,
         });
     }
 

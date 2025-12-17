@@ -3,13 +3,13 @@ const engine = @import("engine");
 
 /// Define sprite IDs for each sprite sheet
 pub const PlayerSpriteId = enum {
-    rotation_270,
-    rotation_285,
-    rotation_300,
-    rotation_315,
-    rotation_330,
-    rotation_345,
-    rotation_0,
+    rotation_180,
+    rotation_165,
+    rotation_150,
+    rotation_135,
+    rotation_120,
+    rotation_105,
+    rotation_90,
 };
 
 pub const Sprites = struct {

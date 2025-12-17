@@ -147,7 +147,7 @@ pub const Starfield = struct {
         };
     }
 
-    pub fn update(self: *@This(), dt: f32, ctx: *engine.Context) void {
+    pub fn update(self: *@This(), ctx: *engine.Context, dt: f32) void {
         const vh = @as(f32, @floatFromInt(ctx.viewport.virtual_height));
 
         const osc_speed: f32 = 0.5;
