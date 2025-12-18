@@ -1,9 +1,9 @@
 const std = @import("std");
 const engine = @import("engine");
-const GameMode = @import("../game_mode.zig").GameMode;
-const GameState = @import("../game_state.zig").GameState;
+const GameMode = @import("../mode.zig").GameMode;
+const GameState = @import("../../core/game_state.zig").GameState;
 
-pub const StartScreen = struct {
+pub const Playing = struct {
     const Self = @This();
 
     pub fn update(self: *Self, ctx: *engine.Context, dt: f32) !?GameMode {

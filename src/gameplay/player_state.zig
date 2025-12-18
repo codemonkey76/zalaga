@@ -1,5 +1,5 @@
 const std = @import("std");
-const StageState = @import("stage_state.zig").StageState;
+const StageState = @import("stage.zig").StageState;
 
 pub const PlayerState = struct {
     score: u32 = 0,

@@ -1,17 +1,17 @@
 const std = @import("std");
 const engine = @import("engine");
 
-const Starfield = @import("graphics/starfield.zig").Starfield;
-const Assets = @import("assets/assets.zig").Assets;
-const Sprites = @import("assets/sprites.zig").Sprites;
-const GameMode = @import("game_mode.zig").GameMode;
-const AttractMode = @import("modes/attract.zig").Attract;
-const PlayingMode = @import("modes/playing.zig").Playing;
-const HighScoreMode = @import("modes/high_score.zig").HighScore;
-const StartScreenMode = @import("modes/start_screen.zig").StartScreen;
-const PlayerState = @import("player_state.zig").PlayerState;
-const HighScoreTable = @import("high_scores.zig").HighScoreTable;
-const Hud = @import("hud.zig").Hud;
+const Starfield = @import("../rendering/starfield.zig").Starfield;
+const Assets = @import("../assets/assets.zig").Assets;
+const Sprites = @import("../assets/sprites.zig").Sprites;
+const GameMode = @import("../modes/mode.zig").GameMode;
+const AttractMode = @import("../modes/attract/attract.zig").Attract;
+const PlayingMode = @import("../modes/playing/playing.zig").Playing;
+const HighScoreMode = @import("../modes/high_score/high_score.zig").HighScore;
+const StartScreenMode = @import("../modes/start_screen/start_screen.zig").StartScreen;
+const PlayerState = @import("../gameplay/player_state.zig").PlayerState;
+const HighScoreTable = @import("../modes/high_score/high_score_table.zig").HighScoreTable;
+const Hud = @import("../rendering/hud.zig").Hud;
 
 pub const GameState = struct {
     player1: ?PlayerState,
@@ -50,6 +50,10 @@ pub const GameState = struct {
         self.high_score = 20000;
         self.credits = 0;
         self.mode_state = .{ .attract = try AttractMode.init(allocator, ctx) };
+
+        // Load Cousine-Regular font
+        const font = try ctx.assets.loadFont("fonts/Cousine-Regular.ttf");
+        ctx.setFont(font);
     }
 
     pub fn update(self: *Self, ctx: *engine.Context, dt: f32) !void {

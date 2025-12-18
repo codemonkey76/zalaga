@@ -1,7 +1,7 @@
 const std = @import("std");
 const engine = @import("engine");
-const GameMode = @import("../game_mode.zig").GameMode;
-const GameState = @import("../game_state.zig").GameState;
+const GameMode = @import("../mode.zig").GameMode;
+const GameState = @import("../../core/game_state.zig").GameState;
 
 pub const HighScore = struct {
     const Self = @This();

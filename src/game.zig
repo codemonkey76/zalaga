@@ -1,5 +1,5 @@
 const std = @import("std");
-const GameState = @import("game_state.zig").GameState;
+const GameState = @import("core/game_state.zig").GameState;
 const engine = @import("engine");
 
 pub const Game = struct {

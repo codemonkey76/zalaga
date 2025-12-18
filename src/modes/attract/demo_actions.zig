@@ -1,8 +1,8 @@
 const engine = @import("engine");
-const EntityRef = @import("entity_manager.zig").EntityRef;
-const EntityType = @import("entity_manager.zig").EntityType;
-const SpriteType = @import("../assets/sprites.zig").SpriteType;
-const SpriteId = @import("../assets/sprites.zig").SpriteId;
+const EntityRef = @import("../../entities/entity_manager.zig").EntityRef;
+const EntityType = @import("../../entities/entity_manager.zig").EntityType;
+const SpriteType = @import("../../assets/sprites.zig").SpriteType;
+const SpriteId = @import("../../assets/sprites.zig").SpriteId;
 
 pub const ActionType = enum {
     move_to,

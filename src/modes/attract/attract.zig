@@ -1,12 +1,12 @@
 const std = @import("std");
 const engine = @import("engine");
-const GameMode = @import("../game_mode.zig").GameMode;
-const GameState = @import("../game_state.zig").GameState;
-const SpriteId = @import("../assets/sprites.zig").SpriteId;
+const GameMode = @import("../mode.zig").GameMode;
+const GameState = @import("../../core/game_state.zig").GameState;
+const SpriteId = @import("../../assets/sprites.zig").SpriteId;
 const createDemoScript = @import("demo_script.zig").createDemoScript;
-const actions = @import("actions.zig");
-const ActionExecutor = @import("action_executor.zig").ActionExecutor;
-const MovementSystem = @import("movement_system.zig").MovementSystem;
+const actions = @import("demo_actions.zig");
+const ActionExecutor = @import("demo_executor.zig").ActionExecutor;
+const MovementSystem = @import("../../systems/movement.zig").MovementSystem;
 
 const SPITE_FLIP_INTERVAL: f32 = 0.5;
 const ATTRACT_MODE_DURATION: f32 = 5.0;
@@ -91,13 +91,11 @@ pub const Attract = struct {
         _ = ctx;
         _ = dt;
     }
-    pub fn updateDemo(self: *Self, ctx: *engine.Context, dt: f32) !void {
-        _ = ctx;
+    pub fn updateDemo(self: *Self, _: *engine.Context, dt: f32) !void {
         if (self.demo_timeline) |*timeline| {
             try timeline.update(dt);
-            // Update movement systems
-            MovementSystem.updateEntities(timeline.executor.entities.entities.items, dt);
-            MovementSystem.updateProjectiles(timeline.executor.entities.projectiles.items, dt);
+            // Additional per-frame movement update
+            MovementSystem.update(timeline.executor.entities.getAll(), dt);
         }
     }
 
@@ -109,41 +107,24 @@ pub const Attract = struct {
             }
         }
 
-        // TODO: Text drawing methods need to be implemented in engine
-        // ctx.renderer.drawTextGridCentered("GALAGA", 4, engine.types.Color.sky_blue);
-        // ctx.renderer.drawTextGridCentered("--- SCORE ---", 6, engine.types.Color.sky_blue);
-        // ctx.renderer.drawText("50      100", .{ .x = 0.45, .y = 0.3 }, engine.types.Color.sky_blue);
-        // ctx.renderer.drawText("80      160", .{ .x = 0.45, .y = 0.36 }, engine.types.Color.sky_blue);
+        // Draw title and score info
+        ctx.renderer.text.drawTextCentered("GALAGA", 0.15, 16, engine.types.Color.white);
+        ctx.renderer.text.drawTextCentered("- SCORE ADVANCE TABLE -", 0.22, 10, engine.types.Color.red);
 
+        // Draw enemy scores with sprites
         if (state.sprites.layouts.get(.goei)) |goei_layout| {
             if (goei_layout.getSprite(self.sprite_id)) |sprite| {
-                ctx.renderer.drawSprite(sprite, .{ .x = 0.3, .y = 0.317 });
-                // ctx.renderer.drawSprite(sprite, .{ .x = 0.65, .y = 0.677 });
-                // ctx.renderer.drawSprite(sprite, .{ .x = 0.73, .y = 0.677 });
-                // ctx.renderer.drawSprite(sprite, .{ .x = 0.85, .y = 0.677 });
+                ctx.renderer.drawSprite(sprite, .{ .x = 0.3, .y = 0.32 });
             }
         }
+        ctx.renderer.text.drawText("- 50 PTS   - 100 PTS", .{ .x = 0.38, .y = 0.31 }, 10, engine.types.Color.white);
+
         if (state.sprites.layouts.get(.zako)) |zako_layout| {
             if (zako_layout.getSprite(self.sprite_id)) |sprite| {
-                ctx.renderer.drawSprite(sprite, .{ .x = 0.3, .y = 0.377 });
+                ctx.renderer.drawSprite(sprite, .{ .x = 0.3, .y = 0.38 });
             }
         }
-
-        // if (state.sprites.layouts.get(.boss)) |boss_layout| {
-        //     if (boss_layout.getSprite(self.sprite_id)) |sprite| {
-        // ctx.renderer.drawSprite(sprite, .{ .x = 0.5, .y = 0.497 });
-        // ctx.renderer.drawSprite(sprite, .{ .x = 0.2, .y = 0.617 });
-        // ctx.renderer.drawSprite(sprite, .{ .x = 0.4, .y = 0.617 });
-        // ctx.renderer.drawSprite(sprite, .{ .x = 0.6, .y = 0.617 });
-        // ctx.renderer.drawSprite(sprite, .{ .x = 0.8, .y = 0.617 });
-        //     }
-        // }
-        // if (state.sprites.layouts.get(.player)) |player_layout| {
-        //     if (player_layout.getSprite(.idle_1)) |sprite| {
-        //         ctx.renderer.drawSprite(sprite, .{ .x = 0.5, .y = 0.91 });
-        //         // ctx.renderer.drawSpriteAnchored(sprite, .{ .x = 0.0, .y = 1.0 }, .bottom_left);
-        //     }
-        // }
+        ctx.renderer.text.drawText("- 80 PTS   - 160 PTS", .{ .x = 0.38, .y = 0.37 }, 10, engine.types.Color.white);
     }
 
     pub fn deinit(self: *Self, ctx: *engine.Context) void {
@@ -158,16 +139,19 @@ pub const Attract = struct {
     }
 };
 
-fn drawDemoEntities(ctx: *engine.Context, entities: anytype, sprites: anytype) !void {
-    // Draw entities
-    for (entities.entities.items) |*entity| {
+fn drawDemoEntities(ctx: *engine.Context, entity_mgr: anytype, sprites: anytype) !void {
+    // Draw all entities
+    for (entity_mgr.getAll()) |*entity| {
         if (!entity.active) continue;
 
-        if (sprites.layouts.get(entity.sprite_type)) |layout| {
-            if (layout.getSprite(entity.sprite_id)) |sprite| {
+        const sprite_type = entity.sprite_type orelse continue;
+        const sprite_id = entity.sprite_id orelse continue;
+
+        if (sprites.layouts.get(sprite_type)) |layout| {
+            if (layout.getSprite(sprite_id)) |sprite| {
                 // Use rotation set only if entity is moving
                 if (entity.isMoving()) {
-                    if (sprites.rotations.get(entity.sprite_type)) |rotation_set| {
+                    if (sprites.rotations.get(sprite_type)) |rotation_set| {
                         if (rotation_set.getSpriteForAngle(entity.angle)) |flipped| {
                             ctx.renderer.drawFlippedSprite(flipped, entity.position);
                             continue;
@@ -177,11 +161,5 @@ fn drawDemoEntities(ctx: *engine.Context, entities: anytype, sprites: anytype) !
                 ctx.renderer.drawSprite(sprite, entity.position);
             }
         }
-    }
-
-    // Draw projectiles
-    for (entities.projectiles.items) |proj| {
-        if (!proj.active) continue;
-        ctx.renderer.drawFilledCircle(proj.position, 0.01, engine.types.Color.yellow);
     }
 }

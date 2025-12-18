@@ -1,9 +1,9 @@
 const std = @import("std");
 const engine = @import("engine");
-const actions = @import("actions.zig");
-const EntityType = @import("entity_manager.zig").EntityType;
-const EntityRef = @import("entity_manager.zig").EntityRef;
-const SpriteType = @import("../assets/sprites.zig").SpriteType;
+const actions = @import("demo_actions.zig");
+const EntityType = @import("../../entities/entity_manager.zig").EntityType;
+const EntityRef = @import("../../entities/entity_manager.zig").EntityRef;
+const SpriteType = @import("../../assets/sprites.zig").SpriteType;
 
 pub fn createDemoScript(allocator: std.mem.Allocator) ![]const actions.DemoAction {
     var builder = engine.timeline.ScriptBuilder(actions.ActionData).init(allocator);

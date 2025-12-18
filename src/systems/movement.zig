@@ -1,27 +1,20 @@
 const std = @import("std");
 const engine = @import("engine");
-const DemoEntity = @import("entity_manager.zig").DemoEntity;
-const Projectile = @import("entity_manager.zig").Projectile;
+const Entity = @import("../entities/entity.zig").Entity;
 
 const DISTANCE_THRESHOLD: f32 = 0.01;
 const OFFSCREEN_MARGIN: f32 = 0.1;
 
 pub const MovementSystem = struct {
-    pub fn updateEntities(entities: []DemoEntity, dt: f32) void {
+    /// Update all entities
+    pub fn update(entities: []Entity, dt: f32) void {
         for (entities) |*entity| {
             if (!entity.active) continue;
             updateEntity(entity, dt);
         }
     }
 
-    pub fn updateProjectiles(projectiles: []Projectile, dt: f32) void {
-        for (projectiles) |*proj| {
-            if (!proj.active) continue;
-            updateProjectile(proj, dt);
-        }
-    }
-
-    fn updateEntity(entity: *DemoEntity, dt: f32) void {
+    fn updateEntity(entity: *Entity, dt: f32) void {
         // Apply velocity
         entity.position.x += entity.velocity.x * dt;
         entity.position.y += entity.velocity.y * dt;
@@ -30,9 +23,14 @@ pub const MovementSystem = struct {
         if (entity.target_pos) |target| {
             updateTargetMovement(entity, target);
         }
+        
+        // Deactivate projectiles that go offscreen
+        if (entity.type == .projectile and entity.isOffscreen(OFFSCREEN_MARGIN)) {
+            entity.active = false;
+        }
     }
 
-    fn updateTargetMovement(entity: *DemoEntity, target: engine.types.Vec2) void {
+    fn updateTargetMovement(entity: *Entity, target: engine.types.Vec2) void {
         const dir = normalizeDirection(entity.position, target);
 
         if (dir.dist < DISTANCE_THRESHOLD) {
@@ -45,16 +43,6 @@ pub const MovementSystem = struct {
             entity.velocity.x = (dir.dx / dir.dist) * entity.move_speed;
             entity.velocity.y = (dir.dy / dir.dist) * entity.move_speed;
             entity.angle = angleFromDirection(dir.dx, dir.dy);
-        }
-    }
-
-    fn updateProjectile(proj: *Projectile, dt: f32) void {
-        proj.position.x += proj.velocity.x * dt;
-        proj.position.y += proj.velocity.y * dt;
-
-        // Deactivate if of-screen
-        if (proj.position.y < -OFFSCREEN_MARGIN or proj.position.y > 1.0 + OFFSCREEN_MARGIN) {
-            proj.active = false;
         }
     }
 
