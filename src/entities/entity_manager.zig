@@ -25,7 +25,7 @@ pub const EntityManager = struct {
     pub fn init(allocator: std.mem.Allocator) Self {
         return .{
             .allocator = allocator,
-            .entities = .{},
+            .entities = std.ArrayList(Entity){},
             .next_entity_id = 1,
         };
     }
@@ -124,6 +124,16 @@ pub const EntityManager = struct {
     pub fn get(self: *Self, id: EntityId) ?*Entity {
         for (self.entities.items) |*entity| {
             if (entity.id == id and entity.active) {
+                return entity;
+            }
+        }
+        return null;
+    }
+
+    /// Find entity by ID (even if inactive - for internal use)
+    pub fn findById(self: *Self, id: EntityId) ?*Entity {
+        for (self.entities.items) |*entity| {
+            if (entity.id == id) {
                 return entity;
             }
         }

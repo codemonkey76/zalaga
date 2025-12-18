@@ -1,3 +1,4 @@
+const std = @import("std");
 const engine = @import("engine");
 const EntityRef = @import("../../entities/entity_manager.zig").EntityRef;
 const EntityType = @import("../../entities/entity_manager.zig").EntityType;
@@ -12,21 +13,19 @@ pub const ActionType = enum {
     set_animation,
     despawn_entity,
     path_follow,
+    show_text,
+    show_text_centered,
 };
 
-pub const Easing = enum {
-    linear,
-    ease_in,
-    ease_out,
-    ease_in_out,
-};
+// Easing function type from engine
+pub const EasingFn = *const fn (f32) f32;
 
 pub const ActionData = union(ActionType) {
     move_to: struct {
         target: EntityRef,
         position: engine.types.Vec2,
-        speed: f32,
-        ease: Easing = .linear,
+        duration: f32,
+        ease: EasingFn = engine.timeline.easing.linear,
     },
     shoot_at: struct {
         shooter: EntityRef,
@@ -50,6 +49,18 @@ pub const ActionData = union(ActionType) {
     path_follow: struct {
         target: EntityRef,
         path: []const engine.types.Vec2,
+    },
+    show_text: struct {
+        text: []const u8,
+        position: engine.types.Vec2,
+        font_size: u32,
+        color: engine.types.Color,
+    },
+    show_text_centered: struct {
+        text: []const u8,
+        y: f32,
+        font_size: u32,
+        color: engine.types.Color,
     },
 };
 

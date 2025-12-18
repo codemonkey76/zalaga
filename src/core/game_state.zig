@@ -12,10 +12,12 @@ const StartScreenMode = @import("../modes/start_screen/start_screen.zig").StartS
 const PlayerState = @import("../gameplay/player_state.zig").PlayerState;
 const HighScoreTable = @import("../modes/high_score/high_score_table.zig").HighScoreTable;
 const Hud = @import("../rendering/hud.zig").Hud;
+const EntityManager = @import("../entities/entity_manager.zig").EntityManager;
 
 pub const GameState = struct {
     player1: ?PlayerState,
     player2: ?PlayerState,
+    player_state: PlayerState,
     hud: Hud,
     active_player: u8,
     last_player1_score: u32,
@@ -27,6 +29,7 @@ pub const GameState = struct {
     starfield: Starfield,
     assets: Assets,
     sprites: Sprites,
+    entity_manager: EntityManager,
     mode_state: union(GameMode) {
         attract: AttractMode,
         playing: PlayingMode,
@@ -42,6 +45,8 @@ pub const GameState = struct {
         self.hud = Hud.init(allocator);
         self.starfield = try Starfield.init(allocator, ctx, .{});
         self.allocator = allocator;
+        self.entity_manager = EntityManager.init(allocator);
+        self.player_state = PlayerState{};
         self.player1 = null;
         self.player2 = null;
         self.active_player = 1;
@@ -61,6 +66,7 @@ pub const GameState = struct {
         try self.hud.update(ctx, dt);
 
         const new_mode = switch (self.mode_state) {
+            .playing => |*mode| try mode.update(ctx, dt, self),
             inline else => |*mode| try mode.update(ctx, dt),
         };
 
@@ -73,6 +79,9 @@ pub const GameState = struct {
         switch (self.mode_state) {
             inline else => |*mode| mode.deinit(ctx),
         }
+
+        // Clear entities on mode transition
+        self.entity_manager.clear();
 
         self.mode_state = switch (new_mode) {
             .attract => .{ .attract = try AttractMode.init(self.allocator, ctx) },
@@ -95,6 +104,7 @@ pub const GameState = struct {
         switch (self.mode_state) {
             inline else => |*mode| mode.deinit(ctx),
         }
+        self.entity_manager.deinit();
         self.sprites.deinit();
         self.starfield.deinit();
         self.assets.deinit(ctx);

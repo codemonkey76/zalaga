@@ -8,15 +8,24 @@ pub const StartScreen = struct {
 
     pub fn update(self: *Self, ctx: *engine.Context, dt: f32) !?GameMode {
         _ = self;
-        _ = ctx;
         _ = dt;
+        
+        // Press 1 to start 1-player game
+        if (ctx.input.isKeyPressed(.one)) {
+            return .playing;
+        }
+        
         return null;
     }
 
     pub fn draw(self: *Self, ctx: *engine.Context, state: *GameState) !void {
         _ = self;
-        _ = ctx;
         _ = state;
+        
+        // Show instructions
+        ctx.renderer.text.drawTextCentered("PRESS 1 TO START", 0.4, 10, engine.types.Color.white);
+        ctx.renderer.text.drawTextCentered("MOVE: ARROW KEYS OR WASD", 0.5, 8, engine.types.Color.gray);
+        ctx.renderer.text.drawTextCentered("SHOOT: SPACE OR Z", 0.55, 8, engine.types.Color.gray);
     }
 
     pub fn deinit(self: *Self, ctx: *engine.Context) void {

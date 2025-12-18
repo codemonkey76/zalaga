@@ -115,4 +115,20 @@ pub const Sprites = struct {
         self.rotations.deinit();
         self.layouts.deinit();
     }
+
+    /// Get a sprite by type and ID
+    pub fn getSprite(self: *Self, sprite_type: SpriteType, sprite_id: SpriteId) ?engine.graphics.Sprite {
+        const layout = self.layouts.get(sprite_type) orelse return null;
+        return layout.getSprite(sprite_id);
+    }
+
+    /// Get layout for a sprite type
+    pub fn getLayout(self: *Self, sprite_type: SpriteType) ?SpriteLayout(SpriteId) {
+        return self.layouts.get(sprite_type);
+    }
+
+    /// Get rotation set for a sprite type
+    pub fn getRotationSet(self: *Self, sprite_type: SpriteType) ?RotationSet(SpriteId) {
+        return self.rotations.get(sprite_type);
+    }
 };

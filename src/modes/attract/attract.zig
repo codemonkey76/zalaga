@@ -3,13 +3,14 @@ const engine = @import("engine");
 const GameMode = @import("../mode.zig").GameMode;
 const GameState = @import("../../core/game_state.zig").GameState;
 const SpriteId = @import("../../assets/sprites.zig").SpriteId;
-const createDemoScript = @import("demo_script.zig").createDemoScript;
+const createInfoScript = @import("info_script.zig").createInfoScript;
 const actions = @import("demo_actions.zig");
 const ActionExecutor = @import("demo_executor.zig").ActionExecutor;
-const MovementSystem = @import("../../systems/movement.zig").MovementSystem;
 
 const SPITE_FLIP_INTERVAL: f32 = 0.5;
-const ATTRACT_MODE_DURATION: f32 = 5.0;
+const INFO_DURATION: f32 = 23.0;
+const DEMO_DURATION: f32 = 60.0;
+const HIGH_SCORE_DURATION: f32 = 5.0;
 
 const DemoTimeline = engine.timeline.Timeline(actions.DemoAction, ActionExecutor);
 
@@ -18,30 +19,30 @@ pub const Attract = struct {
     timer: f32,
     wing_timer: f32 = 0.0,
     sprite_id: SpriteId = .idle_1,
-    demo_timeline: ?DemoTimeline = null,
-    demo_script: ?[]const actions.DemoAction = null,
+    info_timeline: ?DemoTimeline = null,
+    info_script: ?[]const actions.DemoAction = null,
     allocator: std.mem.Allocator,
 
     const Self = @This();
 
     const SubMode = enum {
         high_score_table,
-        game_info,
-        demo_gameplay,
+        demo,
+        info,
     };
 
     pub fn init(allocator: std.mem.Allocator, ctx: *engine.Context) !Self {
         _ = ctx;
 
-        const script = try createDemoScript(allocator);
+        const script = try createInfoScript(allocator);
         const executor = ActionExecutor.init(allocator);
         const timeline = try DemoTimeline.init(allocator, script, executor, .{ .loop = true });
 
         return .{
-            .submode = .game_info,
+            .submode = .info,
             .timer = 0.0,
-            .demo_timeline = timeline,
-            .demo_script = script,
+            .info_timeline = timeline,
+            .info_script = script,
             .allocator = allocator,
         };
     }
@@ -51,13 +52,25 @@ pub const Attract = struct {
         self.wing_timer += dt;
 
         // Cycle through submodes
-        if (self.timer > ATTRACT_MODE_DURATION) {
-            self.timer = 0;
-            self.submode = switch (self.submode) {
-                .high_score_table => .game_info,
-                .game_info => .demo_gameplay,
-                .demo_gameplay => .high_score_table,
-            };
+        switch (self.submode) {
+            .info => {
+                if (self.timer > INFO_DURATION) {
+                    self.timer = 0;
+                    self.submode = .demo;
+                }
+            },
+            .demo => {
+                if (self.timer > DEMO_DURATION) {
+                    self.timer = 0;
+                    self.submode = .high_score_table;
+                }
+            },
+            .high_score_table => {
+                if (self.timer > HIGH_SCORE_DURATION) {
+                    self.timer = 0;
+                    self.submode = .info;
+                }
+            },
         }
 
         // Animate sprites
@@ -69,8 +82,8 @@ pub const Attract = struct {
         // Update current submode
         switch (self.submode) {
             .high_score_table => try self.updateHighScores(ctx, dt),
-            .game_info => try self.updateInfo(ctx, dt),
-            .demo_gameplay => try self.updateDemo(ctx, dt),
+            .demo => try self.updateDemo(ctx, dt),
+            .info => try self.updateInfo(ctx, dt),
         }
 
         // Check for coin insertion
@@ -86,60 +99,43 @@ pub const Attract = struct {
         _ = ctx;
         _ = dt;
     }
-    pub fn updateInfo(self: *Self, ctx: *engine.Context, dt: f32) !void {
+
+    pub fn updateInfo(self: *Self, _: *engine.Context, dt: f32) !void {
+        if (self.info_timeline) |*timeline| {
+            try timeline.update(dt);
+        }
+    }
+
+    pub fn updateDemo(self: *Self, ctx: *engine.Context, dt: f32) !void {
         _ = self;
         _ = ctx;
         _ = dt;
     }
-    pub fn updateDemo(self: *Self, _: *engine.Context, dt: f32) !void {
-        if (self.demo_timeline) |*timeline| {
-            try timeline.update(dt);
-            // Additional per-frame movement update
-            MovementSystem.update(timeline.executor.entities.getAll(), dt);
-        }
-    }
 
     pub fn draw(self: *Self, ctx: *engine.Context, state: *GameState) !void {
         // Draw demo timeline if in demo mode
-        if (self.submode == .demo_gameplay) {
-            if (self.demo_timeline) |*timeline| {
-                try drawDemoEntities(ctx, &timeline.executor.entities, &state.sprites);
+        if (self.submode == .info) {
+            if (self.info_timeline) |*timeline| {
+                try drawInfoEntities(ctx, &timeline.executor.entities, &state.sprites);
+                // Draw timeline texts
+                timeline.executor.drawTexts(ctx);
             }
         }
-
-        // Draw title and score info
-        ctx.renderer.text.drawTextCentered("GALAGA", 0.15, 16, engine.types.Color.white);
-        ctx.renderer.text.drawTextCentered("- SCORE ADVANCE TABLE -", 0.22, 10, engine.types.Color.red);
-
-        // Draw enemy scores with sprites
-        if (state.sprites.layouts.get(.goei)) |goei_layout| {
-            if (goei_layout.getSprite(self.sprite_id)) |sprite| {
-                ctx.renderer.drawSprite(sprite, .{ .x = 0.3, .y = 0.32 });
-            }
-        }
-        ctx.renderer.text.drawText("- 50 PTS   - 100 PTS", .{ .x = 0.38, .y = 0.31 }, 10, engine.types.Color.white);
-
-        if (state.sprites.layouts.get(.zako)) |zako_layout| {
-            if (zako_layout.getSprite(self.sprite_id)) |sprite| {
-                ctx.renderer.drawSprite(sprite, .{ .x = 0.3, .y = 0.38 });
-            }
-        }
-        ctx.renderer.text.drawText("- 80 PTS   - 160 PTS", .{ .x = 0.38, .y = 0.37 }, 10, engine.types.Color.white);
     }
 
     pub fn deinit(self: *Self, ctx: *engine.Context) void {
         _ = ctx;
 
-        if (self.demo_timeline) |*timeline| {
+        if (self.info_timeline) |*timeline| {
             timeline.deinit();
         }
-        if (self.demo_script) |script| {
+        if (self.info_script) |script| {
             self.allocator.free(script);
         }
     }
 };
 
-fn drawDemoEntities(ctx: *engine.Context, entity_mgr: anytype, sprites: anytype) !void {
+fn drawInfoEntities(ctx: *engine.Context, entity_mgr: anytype, sprites: anytype) !void {
     // Draw all entities
     for (entity_mgr.getAll()) |*entity| {
         if (!entity.active) continue;
