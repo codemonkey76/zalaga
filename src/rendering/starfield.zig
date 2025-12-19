@@ -34,7 +34,7 @@ pub const Starfield = struct {
     stars: []Star,
     active_stars: usize,
     prng: std.Random.DefaultPrng,
-    parallax_phase: f32,
+    parallax_phase: f32, // -1 to 1 based on player position
 
     pub fn init(
         allocator: std.mem.Allocator,
@@ -147,11 +147,12 @@ pub const Starfield = struct {
         };
     }
 
-    pub fn update(self: *@This(), ctx: *engine.Context, dt: f32) void {
+    pub fn update(self: *@This(), ctx: *engine.Context, dt: f32, player_x: f32) void {
         const vh = @as(f32, @floatFromInt(ctx.viewport.virtual_height));
 
-        const osc_speed: f32 = 0.5;
-        self.parallax_phase += dt * (osc_speed * 2.0 * std.math.pi);
+        // Use player position for parallax (-1 to 1 range, centered at 0.5)
+        // Negate so stars move opposite to player movement
+        self.parallax_phase = (0.5 - player_x) * 2.0;
 
         var i: usize = 0;
         while (i < self.active_stars) : (i += 1) {
@@ -201,10 +202,12 @@ pub const Starfield = struct {
             const star = self.stars[i];
             if (!star.visible) continue;
 
-            const base_speed = if (self.cfg.shoot_speed > self.cfg.speed) self.cfg.shoot_speed else self.cfg.speed;
-            const depth = if (base_speed > 0) star.speed / base_speed else 1.0;
-
-            const offset_x_n = px * parallax_n * depth;
+            // Shooting stars don't have parallax effect
+            const offset_x_n = if (star.is_shooting) 0.0 else blk: {
+                const base_speed = if (self.cfg.shoot_speed > self.cfg.speed) self.cfg.shoot_speed else self.cfg.speed;
+                const depth = if (base_speed > 0) star.speed / base_speed else 1.0;
+                break :blk px * parallax_n * depth;
+            };
 
             const pos_n = types.Vec2{ .x = star.x + offset_x_n, .y = star.y };
 

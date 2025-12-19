@@ -43,7 +43,7 @@ pub const GameState = struct {
         self.assets = try Assets.init(allocator, ctx);
         self.sprites = try Sprites.init(allocator, ctx);
         self.hud = Hud.init(allocator);
-        self.starfield = try Starfield.init(allocator, ctx, .{});
+        self.starfield = try Starfield.init(allocator, ctx, .{ .parallax_strength = 400.0 });
         self.allocator = allocator;
         self.entity_manager = EntityManager.init(allocator);
         self.player_state = PlayerState{};
@@ -62,7 +62,17 @@ pub const GameState = struct {
     }
 
     pub fn update(self: *Self, ctx: *engine.Context, dt: f32) !void {
-        self.starfield.update(ctx, dt);
+        // Get player x position for starfield parallax
+        var player_x: f32 = 0.5; // Default to center
+        if (self.mode_state == .playing) {
+            if (self.mode_state.playing.player_id) |player_id| {
+                if (self.entity_manager.get(player_id)) |player| {
+                    player_x = player.position.x;
+                }
+            }
+        }
+
+        self.starfield.update(ctx, dt, player_x);
         try self.hud.update(ctx, dt);
 
         const new_mode = switch (self.mode_state) {

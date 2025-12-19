@@ -66,8 +66,6 @@ pub const Playing = struct {
             return .high_score;
         }
 
-        // TODO: Check for stage complete
-
         return null;
     }
 
@@ -77,13 +75,20 @@ pub const Playing = struct {
             if (!entity.active) continue;
 
             if (entity.type == .projectile) {
-                // Draw projectiles as simple circles
-                const color = switch (entity.collision_layer) {
-                    .player_projectile => engine.types.Color.yellow,
-                    .enemy_projectile => engine.types.Color.red,
-                    else => engine.types.Color.white,
-                };
-                ctx.renderer.drawFilledCircle(entity.position, 0.005, color);
+                // Draw projectiles using bullet sprites
+                if (entity.bullet_sprite_id) |bullet_id| {
+                    if (state.sprites.getBulletSprite(bullet_id)) |sprite| {
+                        ctx.renderer.drawSprite(sprite, entity.position);
+                    }
+                } else {
+                    // Fallback to circles if no sprite
+                    const color = switch (entity.collision_layer) {
+                        .player_projectile => engine.types.Color.yellow,
+                        .enemy_projectile => engine.types.Color.red,
+                        else => engine.types.Color.white,
+                    };
+                    ctx.renderer.drawFilledCircle(entity.position, 0.005, color);
+                }
             } else if (entity.sprite_type) |sprite_type| {
                 // Draw sprite-based entities
                 if (entity.sprite_id) |sprite_id| {
@@ -113,11 +118,9 @@ pub const Playing = struct {
         const is_enemy_hit = entity_a.collision_layer == .enemy or entity_b.collision_layer == .enemy;
         const is_player_projectile = entity_a.collision_layer == .player_projectile or entity_b.collision_layer == .player_projectile;
 
-        // Handle damage
         entity_a.health -= 1;
         entity_b.health -= 1;
 
-        // Deactivate dead entities and spawn explosions
         if (entity_a.health <= 0) {
             try self.spawnExplosionFor(entity_a, state);
             entity_a.active = false;
@@ -127,7 +130,6 @@ pub const Playing = struct {
             entity_b.active = false;
         }
 
-        // Update score for enemy kills
         if (is_enemy_hit and is_player_projectile) {
             const enemy = if (entity_a.collision_layer == .enemy) entity_a else entity_b;
             const points: u32 = switch (enemy.type) {
@@ -139,18 +141,17 @@ pub const Playing = struct {
             state.player_state.score += points;
         }
 
-        // Handle player death
         if (is_player_hit) {
             if (state.player_state.lives > 0) {
                 state.player_state.lives -= 1;
             }
-            self.player_id = null; // Will respawn on next update
+            self.player_id = null;
         }
     }
 
     fn spawnExplosionFor(self: *Self, entity: *Entity, state: *GameState) !void {
         _ = state;
-        
+
         const color = switch (entity.type) {
             .player => engine.types.Color.sky_blue,
             .boss, .goei, .zako => engine.types.Color.red,

@@ -2,10 +2,12 @@ const std = @import("std");
 const engine = @import("engine");
 const Entity = @import("../entities/entity.zig").Entity;
 const EntityManager = @import("../entities/entity_manager.zig").EntityManager;
+const EntityType = @import("../entities/entity.zig").EntityType;
+const CollisionLayer = @import("../entities/entity.zig").CollisionLayer;
 
 pub const PlayerController = struct {
     player_speed: f32 = 0.5, // Normalized units per second
-    shoot_cooldown: f32 = 0.2, // Seconds between shots
+    shoot_cooldown: f32 = 0.01, // Seconds between shots
     current_cooldown: f32 = 0.0,
 
     const Self = @This();
@@ -17,46 +19,28 @@ pub const PlayerController = struct {
         ctx: *engine.Context,
         dt: f32,
     ) !void {
-        // Update shoot cooldown
         if (self.current_cooldown > 0) {
             self.current_cooldown -= dt;
         }
 
-        // Movement input
         var move_x: f32 = 0;
-        var move_y: f32 = 0;
 
         if (ctx.input.isKeyDown(.left) or ctx.input.isKeyDown(.a)) {
             move_x -= 1;
         }
+
         if (ctx.input.isKeyDown(.right) or ctx.input.isKeyDown(.d)) {
             move_x += 1;
         }
-        if (ctx.input.isKeyDown(.up) or ctx.input.isKeyDown(.w)) {
-            move_y -= 1;
-        }
-        if (ctx.input.isKeyDown(.down) or ctx.input.isKeyDown(.s)) {
-            move_y += 1;
-        }
 
-        // Apply movement
-        if (move_x != 0 or move_y != 0) {
-            // Normalize diagonal movement
-            const magnitude = @sqrt(move_x * move_x + move_y * move_y);
-            move_x /= magnitude;
-            move_y /= magnitude;
-
+        if (move_x != 0) {
             player.position.x += move_x * self.player_speed * dt;
-            player.position.y += move_y * self.player_speed * dt;
 
-            // Clamp to screen bounds (with margin for sprite)
-            const margin = 0.02;
+            const margin = 0.025;
             player.position.x = @max(margin, @min(1.0 - margin, player.position.x));
-            player.position.y = @max(margin, @min(1.0 - margin, player.position.y));
         }
 
-        // Shooting input
-        if (ctx.input.isKeyDown(.space) or ctx.input.isKeyDown(.z)) {
+        if (ctx.input.isKeyPressed(.space) or ctx.input.isKeyPressed(.z)) {
             if (self.current_cooldown <= 0) {
                 try self.shoot(player, entity_manager);
                 self.current_cooldown = self.shoot_cooldown;
@@ -66,16 +50,24 @@ pub const PlayerController = struct {
 
     fn shoot(self: *Self, player: *Entity, entity_manager: *EntityManager) !void {
         _ = self;
-        
-        // Spawn projectile slightly above player
+
+        var bullet_count: u32 = 0;
+        for (entity_manager.getAll()) |entity| {
+            if (entity.active and entity.type == .projectile and entity.collision_layer == .player_projectile) {
+                bullet_count += 1;
+            }
+        }
+
+        if (bullet_count >= 2) return;
+
         const bullet_pos = engine.types.Vec2{
             .x = player.position.x,
-            .y = player.position.y - 0.03,
+            .y = player.position.y,
         };
 
         const bullet_velocity = engine.types.Vec2{
             .x = 0,
-            .y = -0.8, // Move up at 0.8 normalized units/second
+            .y = -0.8,
         };
 
         _ = try entity_manager.spawnProjectile(

@@ -9,7 +9,7 @@
             .hash = "arcade_lib-0.0.0-1ZgfDrxdAAANETKPatEdaaTYcoU8-vly-aGze16F9oTv",
         },
         .engine = .{
-            .path = "../engine",
+            .path = "../zig-arcade-engine",
         },
     },
     .paths = .{

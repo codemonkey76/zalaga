@@ -33,16 +33,35 @@ pub const SpriteId = enum {
     idle_2,
 };
 
+pub const BulletSpriteId = enum {
+    player_bullet,
+    enemy_bullet,
+};
+
+pub const ExplosionSpriteId = enum {
+    player_frame_1,
+    player_frame_2,
+    player_frame_3,
+    player_frame_4,
+    enemy_frame_1,
+    enemy_frame_2,
+    enemy_frame_3,
+    enemy_frame_4,
+    enemy_frame_5,
+};
+
 pub const Sprites = struct {
     allocator: std.mem.Allocator,
 
     layouts: std.AutoHashMap(SpriteType, SpriteLayout(SpriteId)),
     rotations: std.AutoHashMap(SpriteType, RotationSet(SpriteId)),
+    bullet_layout: SpriteLayout(BulletSpriteId),
+    explosion_layout: SpriteLayout(ExplosionSpriteId),
 
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator, ctx: *engine.Context) !Self {
-        const sprite_sheet = try ctx.assets.loadTexture("textures/spritesheet.png");
+        const sprite_sheet = try ctx.assets.loadTexture("textures/spritesheet.png", engine.types.Color.black);
         var layouts = std.AutoHashMap(SpriteType, SpriteLayout(SpriteId)).init(allocator);
         var rotations = std.AutoHashMap(SpriteType, RotationSet(SpriteId)).init(allocator);
 
@@ -59,10 +78,15 @@ pub const Sprites = struct {
         // try initSprite(allocator, sprite_sheet, &layouts, &rotations, .momji, 10);
         try initSprite(allocator, sprite_sheet, &layouts, &rotations, .enterprise, 11);
 
+        const bullet_layout = try initBullets(allocator, sprite_sheet);
+        const explosion_layout = try initExplosions(allocator, sprite_sheet);
+
         return .{
             .allocator = allocator,
             .layouts = layouts,
             .rotations = rotations,
+            .bullet_layout = bullet_layout,
+            .explosion_layout = explosion_layout,
         };
     }
 
@@ -107,6 +131,35 @@ pub const Sprites = struct {
         });
     }
 
+    fn initBullets(allocator: std.mem.Allocator, texture: Texture) !SpriteLayout(BulletSpriteId) {
+        var builder = SpriteLayoutBuilder(BulletSpriteId).init(allocator, texture);
+
+        // Bullet at x=307, y=118
+        try builder.addSprite(.player_bullet, 307, 118, 16, 16);
+        try builder.addSprite(.enemy_bullet, 307, 136, 16, 16);
+
+        return builder.build();
+    }
+
+    fn initExplosions(allocator: std.mem.Allocator, texture: Texture) !SpriteLayout(ExplosionSpriteId) {
+        var builder = SpriteLayoutBuilder(ExplosionSpriteId).init(allocator, texture);
+
+        // Player explosion: 4 frames, 32x32, starting at x=145, y=1
+        try builder.addSprite(.player_frame_1, 145, 1, 32, 32);
+        try builder.addSprite(.player_frame_2, 145 + 34, 1, 32, 32); // 32 + 2 spacing
+        try builder.addSprite(.player_frame_3, 145 + 68, 1, 32, 32);
+        try builder.addSprite(.player_frame_4, 145 + 102, 1, 32, 32);
+
+        // Enemy explosion: 5 frames, 32x32, starting at x=289, y=1
+        try builder.addSprite(.enemy_frame_1, 289, 1, 32, 32);
+        try builder.addSprite(.enemy_frame_2, 289 + 34, 1, 32, 32);
+        try builder.addSprite(.enemy_frame_3, 289 + 68, 1, 32, 32);
+        try builder.addSprite(.enemy_frame_4, 289 + 102, 1, 32, 32);
+        try builder.addSprite(.enemy_frame_5, 289 + 136, 1, 32, 32);
+
+        return builder.build();
+    }
+
     pub fn deinit(self: *Self) void {
         var rot_iter = self.rotations.valueIterator();
         while (rot_iter.next()) |rotation_set| {
@@ -130,5 +183,15 @@ pub const Sprites = struct {
     /// Get rotation set for a sprite type
     pub fn getRotationSet(self: *Self, sprite_type: SpriteType) ?RotationSet(SpriteId) {
         return self.rotations.get(sprite_type);
+    }
+
+    /// Get a bullet sprite by ID
+    pub fn getBulletSprite(self: *Self, bullet_id: BulletSpriteId) ?engine.graphics.Sprite {
+        return self.bullet_layout.getSprite(bullet_id);
+    }
+
+    /// Get an explosion sprite by ID
+    pub fn getExplosionSprite(self: *Self, explosion_id: ExplosionSpriteId) ?engine.graphics.Sprite {
+        return self.explosion_layout.getSprite(explosion_id);
     }
 };

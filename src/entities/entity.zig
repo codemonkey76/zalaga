@@ -34,6 +34,7 @@ pub const Entity = struct {
     // Rendering
     sprite_type: ?SpriteType,
     sprite_id: ?SpriteId,
+    bullet_sprite_id: ?BulletSpriteId,
     
     // Collision
     collision_radius: f32,
@@ -65,3 +66,4 @@ pub const Entity = struct {
 
 const SpriteType = @import("../assets/sprites.zig").SpriteType;
 const SpriteId = @import("../assets/sprites.zig").SpriteId;
+const BulletSpriteId = @import("../assets/sprites.zig").BulletSpriteId;

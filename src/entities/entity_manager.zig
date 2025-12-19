@@ -5,6 +5,7 @@ const Entity = @import("entity.zig").Entity;
 const EntityId = @import("entity.zig").EntityId;
 const SpriteType = @import("../assets/sprites.zig").SpriteType;
 const SpriteId = @import("../assets/sprites.zig").SpriteId;
+const BulletSpriteId = @import("../assets/sprites.zig").BulletSpriteId;
 
 // Re-export types from entity.zig for convenience
 pub const EntityType = @import("entity.zig").EntityType;
@@ -41,6 +42,7 @@ pub const EntityManager = struct {
             .angle = 0,
             .sprite_type = .player,
             .sprite_id = .idle_1,
+            .bullet_sprite_id = null,
             .collision_radius = 8.0,
             .collision_layer = .player,
             .collision_enabled = true,
@@ -68,6 +70,7 @@ pub const EntityManager = struct {
             .angle = 0,
             .sprite_type = sprite_type,
             .sprite_id = .idle_1,
+            .bullet_sprite_id = null,
             .collision_radius = 8.0,
             .collision_layer = .enemy,
             .collision_enabled = true,
@@ -92,6 +95,12 @@ pub const EntityManager = struct {
             else => .player_projectile,
         };
 
+        const bullet_sprite: BulletSpriteId = switch (owner_layer) {
+            .player => .player_bullet,
+            .enemy => .enemy_bullet,
+            else => .player_bullet,
+        };
+
         return try self.spawn(.{
             .id = self.next_entity_id,
             .type = .projectile,
@@ -101,6 +110,7 @@ pub const EntityManager = struct {
             .angle = 0,
             .sprite_type = null,
             .sprite_id = null,
+            .bullet_sprite_id = bullet_sprite,
             .collision_radius = 2.0,
             .collision_layer = projectile_layer,
             .collision_enabled = true,

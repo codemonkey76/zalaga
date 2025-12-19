@@ -9,7 +9,7 @@ pub const Assets = struct {
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator, ctx: *engine.Context) !Assets {
-        const texture = try ctx.assets.loadTexture("textures/spritesheet.png");
+        const texture = try ctx.assets.loadTexture("textures/spritesheet.png", engine.types.Color.black);
 
         var builder = engine.graphics.SpriteLayoutBuilder(SpriteId).init(allocator, texture);
         try builder.addSprite(.player_idle, 0, 0, 16, 16);
