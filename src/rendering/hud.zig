@@ -1,5 +1,6 @@
 const std = @import("std");
 const engine = @import("engine");
+const Context = @import("../context.zig").Context;
 const Color = engine.types.Color;
 const GameState = @import("../core/game_state.zig").GameState;
 const PlayerState = @import("../gameplay/player_state.zig");
@@ -19,7 +20,7 @@ pub const Hud = struct {
         _ = self;
     }
 
-    pub fn draw(_: *Self, ctx: *engine.Context, state: *const GameState) !void {
+    pub fn draw(_: *Self, ctx: *Context, state: *const GameState) !void {
         var buf: [16]u8 = undefined;
 
         // Player 1 score (top left)
@@ -46,7 +47,7 @@ pub const Hud = struct {
         ctx.renderer.text.drawText(credit_str, .{ .x = 0.05, .y = 0.95 }, 10, Color.white);
     }
 
-    pub fn update(self: *Self, ctx: *engine.Context, dt: f32) !void {
+    pub fn update(self: *Self, ctx: *Context, dt: f32) !void {
         _ = self;
         _ = ctx;
         _ = dt;

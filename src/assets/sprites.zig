@@ -1,5 +1,6 @@
 const std = @import("std");
 const engine = @import("engine");
+const Context = @import("../context.zig").Context;
 const SpriteLayoutBuilder = engine.graphics.SpriteLayoutBuilder;
 const SpriteLayout = engine.graphics.SpriteLayout;
 const RotationSet = engine.graphics.RotationSet;
@@ -60,7 +61,7 @@ pub const Sprites = struct {
 
     const Self = @This();
 
-    pub fn init(allocator: std.mem.Allocator, ctx: *engine.Context) !Self {
+    pub fn init(allocator: std.mem.Allocator, ctx: *Context) !Self {
         const sprite_sheet = try ctx.assets.loadTexture("textures/spritesheet.png", engine.types.Color.black);
         var layouts = std.AutoHashMap(SpriteType, SpriteLayout(SpriteId)).init(allocator);
         var rotations = std.AutoHashMap(SpriteType, RotationSet(SpriteId)).init(allocator);

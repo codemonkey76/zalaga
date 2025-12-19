@@ -1,6 +1,10 @@
 const std = @import("std");
 const GameState = @import("core/game_state.zig").GameState;
 const engine = @import("engine");
+const SoundId = @import("assets/sounds.zig").SoundId;
+
+const Context = engine.Context(SoundId);
+const GameVTable = engine.GameVTable(Context);
 
 pub const Game = struct {
     allocator: std.mem.Allocator,
@@ -20,7 +24,7 @@ pub const Game = struct {
     }
 
     pub fn run(self: *Self) !void {
-        try engine.run(self.allocator, self, .{
+        try engine.run(SoundId, self.allocator, self, GameVTable{
             .init = Self.onInit,
             .update = Self.onUpdate,
             .draw = Self.onDraw,
@@ -35,22 +39,22 @@ pub const Game = struct {
         });
     }
 
-    fn onInit(ptr: *anyopaque, ctx: *engine.Context) !void {
+    fn onInit(ptr: *anyopaque, ctx: *Context) !void {
         const self: *Self = @ptrCast(@alignCast(ptr));
         try self.state.init(self.allocator, ctx);
     }
 
-    fn onUpdate(ptr: *anyopaque, ctx: *engine.Context, dt: f32) !void {
+    fn onUpdate(ptr: *anyopaque, ctx: *Context, dt: f32) !void {
         const self: *Self = @ptrCast(@alignCast(ptr));
         try self.state.update(ctx, dt);
     }
 
-    fn onDraw(ptr: *anyopaque, ctx: *engine.Context) !void {
+    fn onDraw(ptr: *anyopaque, ctx: *Context) !void {
         const self: *Self = @ptrCast(@alignCast(ptr));
         try self.state.draw(ctx);
     }
 
-    fn onShutdown(ptr: *anyopaque, ctx: *engine.Context) void {
+    fn onShutdown(ptr: *anyopaque, ctx: *Context) void {
         const self: *Self = @ptrCast(@alignCast(ptr));
         self.state.shutdown(ctx);
     }

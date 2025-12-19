@@ -1,5 +1,6 @@
 const std = @import("std");
 const engine = @import("engine");
+const Context = @import("../context.zig").Context;
 const types = engine.types;
 
 const Star = struct {
@@ -38,7 +39,7 @@ pub const Starfield = struct {
 
     pub fn init(
         allocator: std.mem.Allocator,
-        _: *engine.Context,
+        _: *Context,
         cfg: StarfieldConfig,
     ) !@This() {
         const prng = std.Random.DefaultPrng.init(@intCast(std.time.timestamp()));
@@ -147,7 +148,7 @@ pub const Starfield = struct {
         };
     }
 
-    pub fn update(self: *@This(), ctx: *engine.Context, dt: f32, player_x: f32) void {
+    pub fn update(self: *@This(), ctx: *Context, dt: f32, player_x: f32) void {
         const vh = @as(f32, @floatFromInt(ctx.viewport.virtual_height));
 
         // Use player position for parallax (-1 to 1 range, centered at 0.5)
@@ -184,7 +185,7 @@ pub const Starfield = struct {
         }
     }
 
-    pub fn draw(self: *const @This(), ctx: *engine.Context) void {
+    pub fn draw(self: *const @This(), ctx: *Context) void {
         const vw = @as(f32, @floatFromInt(ctx.viewport.virtual_width));
         const vh = @as(f32, @floatFromInt(ctx.viewport.virtual_height));
 

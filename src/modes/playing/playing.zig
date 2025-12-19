@@ -1,5 +1,6 @@
 const std = @import("std");
 const engine = @import("engine");
+const Context = @import("../../context.zig").Context;
 const GameMode = @import("../mode.zig").GameMode;
 const GameState = @import("../../core/game_state.zig").GameState;
 const Entity = @import("../../entities/entity.zig").Entity;
@@ -20,7 +21,7 @@ pub const Playing = struct {
 
     const Self = @This();
 
-    pub fn init(allocator: std.mem.Allocator, ctx: *engine.Context) !Self {
+    pub fn init(allocator: std.mem.Allocator, ctx: *Context) !Self {
         _ = ctx;
         return .{
             .allocator = allocator,
@@ -31,7 +32,7 @@ pub const Playing = struct {
         };
     }
 
-    pub fn update(self: *Self, ctx: *engine.Context, dt: f32, state: *GameState) !?GameMode {
+    pub fn update(self: *Self, ctx: *Context, dt: f32, state: *GameState) !?GameMode {
         // Spawn player if not present
         if (self.player_id == null) {
             self.player_id = try state.entity_manager.spawnPlayer(.{ .x = 0.5, .y = 0.85 });
@@ -69,7 +70,7 @@ pub const Playing = struct {
         return null;
     }
 
-    pub fn draw(self: *Self, ctx: *engine.Context, state: *GameState) !void {
+    pub fn draw(self: *Self, ctx: *Context, state: *GameState) !void {
         // Draw all entities
         for (state.entity_manager.getAll()) |entity| {
             if (!entity.active) continue;
@@ -103,7 +104,7 @@ pub const Playing = struct {
         self.explosion_system.draw(ctx);
     }
 
-    pub fn deinit(self: *Self, ctx: *engine.Context) void {
+    pub fn deinit(self: *Self, ctx: *Context) void {
         _ = ctx;
         self.collision_system.deinit();
         self.explosion_system.deinit();

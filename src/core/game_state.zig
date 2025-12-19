@@ -1,9 +1,13 @@
 const std = @import("std");
 const engine = @import("engine");
+const SoundId = @import("../assets/sounds.zig").SoundId;
+
+const Context = engine.Context(SoundId);
 
 const Starfield = @import("../rendering/starfield.zig").Starfield;
 const Assets = @import("../assets/assets.zig").Assets;
 const Sprites = @import("../assets/sprites.zig").Sprites;
+const loadSounds = @import("../assets/sounds.zig").loadSounds;
 const GameMode = @import("../modes/mode.zig").GameMode;
 const AttractMode = @import("../modes/attract/attract.zig").Attract;
 const PlayingMode = @import("../modes/playing/playing.zig").Playing;
@@ -39,9 +43,10 @@ pub const GameState = struct {
 
     const Self = @This();
 
-    pub fn init(self: *Self, allocator: std.mem.Allocator, ctx: *engine.Context) !void {
+    pub fn init(self: *Self, allocator: std.mem.Allocator, ctx: *Context) !void {
         self.assets = try Assets.init(allocator, ctx);
         self.sprites = try Sprites.init(allocator, ctx);
+        try loadSounds(ctx);
         self.hud = Hud.init(allocator);
         self.starfield = try Starfield.init(allocator, ctx, .{ .parallax_strength = 400.0 });
         self.allocator = allocator;
@@ -61,7 +66,7 @@ pub const GameState = struct {
         ctx.setFont(font);
     }
 
-    pub fn update(self: *Self, ctx: *engine.Context, dt: f32) !void {
+    pub fn update(self: *Self, ctx: *Context, dt: f32) !void {
         // Get player x position for starfield parallax
         var player_x: f32 = 0.5; // Default to center
         if (self.mode_state == .playing) {
@@ -85,7 +90,7 @@ pub const GameState = struct {
         }
     }
 
-    fn transitionTo(self: *Self, new_mode: GameMode, ctx: *engine.Context) !void {
+    fn transitionTo(self: *Self, new_mode: GameMode, ctx: *Context) !void {
         switch (self.mode_state) {
             inline else => |*mode| mode.deinit(ctx),
         }
@@ -101,7 +106,7 @@ pub const GameState = struct {
         };
     }
 
-    pub fn draw(self: *Self, ctx: *engine.Context) !void {
+    pub fn draw(self: *Self, ctx: *Context) !void {
         self.starfield.draw(ctx);
         try self.hud.draw(ctx, self);
 
@@ -110,7 +115,7 @@ pub const GameState = struct {
         }
     }
 
-    pub fn shutdown(self: *Self, ctx: *engine.Context) void {
+    pub fn shutdown(self: *Self, ctx: *Context) void {
         switch (self.mode_state) {
             inline else => |*mode| mode.deinit(ctx),
         }

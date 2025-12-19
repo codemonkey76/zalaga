@@ -1,5 +1,6 @@
 const std = @import("std");
 const engine = @import("engine");
+const Context = @import("../context.zig").Context;
 
 const SpriteId = enum {
     player_idle,
@@ -8,7 +9,7 @@ const SpriteId = enum {
 pub const Assets = struct {
     const Self = @This();
 
-    pub fn init(allocator: std.mem.Allocator, ctx: *engine.Context) !Assets {
+    pub fn init(allocator: std.mem.Allocator, ctx: *Context) !Assets {
         const texture = try ctx.assets.loadTexture("textures/spritesheet.png", engine.types.Color.black);
 
         var builder = engine.graphics.SpriteLayoutBuilder(SpriteId).init(allocator, texture);
@@ -19,7 +20,7 @@ pub const Assets = struct {
         return .{};
     }
 
-    pub fn deinit(self: *Self, ctx: *engine.Context) void {
+    pub fn deinit(self: *Self, ctx: *Context) void {
         _ = self;
         _ = ctx;
     }

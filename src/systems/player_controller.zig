@@ -1,5 +1,6 @@
 const std = @import("std");
 const engine = @import("engine");
+const Context = @import("../context.zig").Context;
 const Entity = @import("../entities/entity.zig").Entity;
 const EntityManager = @import("../entities/entity_manager.zig").EntityManager;
 const EntityType = @import("../entities/entity.zig").EntityType;
@@ -16,7 +17,7 @@ pub const PlayerController = struct {
         self: *Self,
         player: *Entity,
         entity_manager: *EntityManager,
-        ctx: *engine.Context,
+        ctx: *Context,
         dt: f32,
     ) !void {
         if (self.current_cooldown > 0) {
@@ -42,13 +43,13 @@ pub const PlayerController = struct {
 
         if (ctx.input.isKeyPressed(.space) or ctx.input.isKeyPressed(.z)) {
             if (self.current_cooldown <= 0) {
-                try self.shoot(player, entity_manager);
+                try self.shoot(player, entity_manager, ctx);
                 self.current_cooldown = self.shoot_cooldown;
             }
         }
     }
 
-    fn shoot(self: *Self, player: *Entity, entity_manager: *EntityManager) !void {
+    fn shoot(self: *Self, player: *Entity, entity_manager: *EntityManager, ctx: *Context) !void {
         _ = self;
 
         var bullet_count: u32 = 0;
@@ -59,6 +60,8 @@ pub const PlayerController = struct {
         }
 
         if (bullet_count >= 2) return;
+
+        ctx.audio.playSound(.shoot);
 
         const bullet_pos = engine.types.Vec2{
             .x = player.position.x,

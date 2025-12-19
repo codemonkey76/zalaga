@@ -1,5 +1,6 @@
 const std = @import("std");
 const engine = @import("engine");
+const Context = @import("../../context.zig").Context;
 const GameMode = @import("../mode.zig").GameMode;
 const GameState = @import("../../core/game_state.zig").GameState;
 const SpriteId = @import("../../assets/sprites.zig").SpriteId;
@@ -31,7 +32,7 @@ pub const Attract = struct {
         info,
     };
 
-    pub fn init(allocator: std.mem.Allocator, ctx: *engine.Context) !Self {
+    pub fn init(allocator: std.mem.Allocator, ctx: *Context) !Self {
         _ = ctx;
 
         const script = try createInfoScript(allocator);
@@ -47,7 +48,7 @@ pub const Attract = struct {
         };
     }
 
-    pub fn update(self: *Self, ctx: *engine.Context, dt: f32) !?GameMode {
+    pub fn update(self: *Self, ctx: *Context, dt: f32) !?GameMode {
         self.timer += dt;
         self.wing_timer += dt;
 
@@ -88,31 +89,32 @@ pub const Attract = struct {
 
         // Check for coin insertion
         if (ctx.input.isKeyPressed(.five)) {
+            ctx.audio.playSound(.insert_coin);
             return .start_screen;
         }
 
         return null;
     }
 
-    pub fn updateHighScores(self: *Self, ctx: *engine.Context, dt: f32) !void {
+    pub fn updateHighScores(self: *Self, ctx: *Context, dt: f32) !void {
         _ = self;
         _ = ctx;
         _ = dt;
     }
 
-    pub fn updateInfo(self: *Self, _: *engine.Context, dt: f32) !void {
+    pub fn updateInfo(self: *Self, _: *Context, dt: f32) !void {
         if (self.info_timeline) |*timeline| {
             try timeline.update(dt);
         }
     }
 
-    pub fn updateDemo(self: *Self, ctx: *engine.Context, dt: f32) !void {
+    pub fn updateDemo(self: *Self, ctx: *Context, dt: f32) !void {
         _ = self;
         _ = ctx;
         _ = dt;
     }
 
-    pub fn draw(self: *Self, ctx: *engine.Context, state: *GameState) !void {
+    pub fn draw(self: *Self, ctx: *Context, state: *GameState) !void {
         // Draw demo timeline if in demo mode
         if (self.submode == .info) {
             if (self.info_timeline) |*timeline| {
@@ -123,7 +125,7 @@ pub const Attract = struct {
         }
     }
 
-    pub fn deinit(self: *Self, ctx: *engine.Context) void {
+    pub fn deinit(self: *Self, ctx: *Context) void {
         _ = ctx;
 
         if (self.info_timeline) |*timeline| {
@@ -135,7 +137,7 @@ pub const Attract = struct {
     }
 };
 
-fn drawInfoEntities(ctx: *engine.Context, entity_mgr: anytype, sprites: anytype) !void {
+fn drawInfoEntities(ctx: *Context, entity_mgr: anytype, sprites: anytype) !void {
     // Draw all entities
     for (entity_mgr.getAll()) |*entity| {
         if (!entity.active) continue;

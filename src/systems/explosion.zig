@@ -1,5 +1,6 @@
 const std = @import("std");
 const engine = @import("engine");
+const Context = @import("../context.zig").Context;
 const Entity = @import("../entities/entity.zig").Entity;
 
 pub const ExplosionParticle = struct {
@@ -85,7 +86,7 @@ pub const ExplosionSystem = struct {
         }
     }
 
-    pub fn draw(self: *Self, ctx: *engine.Context) void {
+    pub fn draw(self: *Self, ctx: *Context) void {
         for (self.particles.items) |particle| {
             // Fade out over lifetime
             const alpha_factor = particle.lifetime / particle.max_lifetime;

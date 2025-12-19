@@ -1,5 +1,6 @@
 const std = @import("std");
 const engine = @import("engine");
+const Context = @import("../../context.zig").Context;
 const actions = @import("demo_actions.zig");
 const EntityManager = @import("../../entities/entity_manager.zig").EntityManager;
 
@@ -164,7 +165,7 @@ pub const ActionExecutor = struct {
         }
     }
 
-    pub fn drawTexts(self: *Self, ctx: *engine.Context) void {
+    pub fn drawTexts(self: *Self, ctx: *Context) void {
         for (self.active_texts.items) |text_state| {
             if (text_state.centered) {
                 ctx.renderer.text.drawTextCentered(
