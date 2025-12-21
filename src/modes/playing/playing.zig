@@ -1,6 +1,6 @@
 const std = @import("std");
 const engine = @import("engine");
-const Context = @import("../../context.zig").Context;
+const Context = @import("../../mod.zig").Context;
 const GameMode = @import("../mode.zig").GameMode;
 const GameState = @import("../../core/game_state.zig").GameState;
 const Entity = @import("../../entities/entity.zig").Entity;

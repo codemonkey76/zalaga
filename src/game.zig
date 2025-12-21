@@ -1,10 +1,8 @@
 const std = @import("std");
-const GameState = @import("core/game_state.zig").GameState;
 const engine = @import("engine");
-const SoundId = @import("assets/sounds.zig").SoundId;
 
-const Context = engine.Context(SoundId);
-const GameVTable = engine.GameVTable(Context);
+const z = @import("mod.zig");
+const GameState = z.GameState;
 
 pub const Game = struct {
     allocator: std.mem.Allocator,
@@ -24,37 +22,46 @@ pub const Game = struct {
     }
 
     pub fn run(self: *Self) !void {
-        try engine.run(SoundId, self.allocator, self, GameVTable{
-            .init = Self.onInit,
-            .update = Self.onUpdate,
-            .draw = Self.onDraw,
-            .shutdown = Self.onShutdown,
-        }, .{
-            .title = "Zalaga",
-            .width = 1280,
-            .height = 720,
-            .target_fps = 155,
-            .log_level = .warning,
-            .asset_root = "assets",
-        });
+        try engine.run(
+            z.assets.TextureAsset,
+            z.assets.FontAsset,
+            z.assets.PathAsset,
+            z.assets.SoundAsset,
+            self.allocator,
+            self,
+            z.GameVTable{
+                .init = Self.onInit,
+                .update = Self.onUpdate,
+                .draw = Self.onDraw,
+                .shutdown = Self.onShutdown,
+            },
+            .{
+                .title = "Zalaga",
+                .width = 1280,
+                .height = 720,
+                .target_fps = 155,
+                .log_level = .warning,
+                .asset_root = "assets",
+            },
+        );
     }
 
-    fn onInit(ptr: *anyopaque, ctx: *Context) !void {
+    fn onInit(ptr: *anyopaque, ctx: *z.Context) !void {
         const self: *Self = @ptrCast(@alignCast(ptr));
         try self.state.init(self.allocator, ctx);
     }
 
-    fn onUpdate(ptr: *anyopaque, ctx: *Context, dt: f32) !void {
+    fn onUpdate(ptr: *anyopaque, ctx: *z.Context, dt: f32) !void {
         const self: *Self = @ptrCast(@alignCast(ptr));
         try self.state.update(ctx, dt);
     }
 
-    fn onDraw(ptr: *anyopaque, ctx: *Context) !void {
+    fn onDraw(ptr: *anyopaque, ctx: *z.Context) !void {
         const self: *Self = @ptrCast(@alignCast(ptr));
         try self.state.draw(ctx);
     }
 
-    fn onShutdown(ptr: *anyopaque, ctx: *Context) void {
+    fn onShutdown(ptr: *anyopaque, ctx: *z.Context) void {
         const self: *Self = @ptrCast(@alignCast(ptr));
         self.state.shutdown(ctx);
     }

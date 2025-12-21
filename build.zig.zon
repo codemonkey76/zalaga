@@ -5,11 +5,10 @@
     .minimum_zig_version = "0.15.2",
     .dependencies = .{
         .arcade_lib = .{
-            .url = "git+https://github.com/codemonkey76/arcade-lib?ref=main#8af4c36834b764c2310ffcea68f73e6f817d8f37",
-            .hash = "arcade_lib-0.0.0-1ZgfDrxdAAANETKPatEdaaTYcoU8-vly-aGze16F9oTv",
+            .path = "../arcade-lib",
         },
         .engine = .{
-            .path = "../zig-arcade-engine",
+            .path = "../engine",
         },
     },
     .paths = .{

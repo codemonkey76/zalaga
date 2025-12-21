@@ -1,6 +1,6 @@
 const std = @import("std");
 const engine = @import("engine");
-const Context = @import("../../context.zig").Context;
+const Context = @import("../../mod.zig").Context;
 const actions = @import("demo_actions.zig");
 const EntityManager = @import("../../entities/entity_manager.zig").EntityManager;
 
@@ -113,7 +113,7 @@ pub const ActionExecutor = struct {
 
     pub fn stop(self: *Self, action: actions.DemoAction, action_id: usize) void {
         _ = action;
-        
+
         // Remove text associated with this action
         var i: usize = 0;
         while (i < self.active_texts.items.len) {
@@ -127,27 +127,27 @@ pub const ActionExecutor = struct {
 
     pub fn update(self: *Self, action: actions.DemoAction, progress: f32) !void {
         _ = action;
-        
+
         // Update all active movements with easing
         var i: usize = 0;
         while (i < self.active_movements.items.len) {
             var movement = &self.active_movements.items[i];
-            
+
             if (self.entities.findById(movement.entity_id)) |entity| {
                 // Apply easing function to progress
                 const eased_t = movement.ease_fn(progress);
-                
+
                 // Interpolate position
                 entity.position.x = movement.start_pos.x + (movement.target_pos.x - movement.start_pos.x) * eased_t;
                 entity.position.y = movement.start_pos.y + (movement.target_pos.y - movement.start_pos.y) * eased_t;
-                
+
                 // Update angle based on direction
                 const dx = movement.target_pos.x - movement.start_pos.x;
                 const dy = movement.target_pos.y - movement.start_pos.y;
                 if (dx != 0.0 or dy != 0.0) {
                     entity.angle = std.math.radiansToDegrees(std.math.atan2(dy, dx)) + 90.0;
                 }
-                
+
                 // Remove movement when complete
                 if (progress >= 1.0) {
                     entity.position = movement.target_pos;
@@ -160,7 +160,7 @@ pub const ActionExecutor = struct {
                 _ = self.active_movements.swapRemove(i);
                 continue;
             }
-            
+
             i += 1;
         }
     }

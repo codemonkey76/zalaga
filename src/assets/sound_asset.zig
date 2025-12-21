@@ -1,0 +1,41 @@
+pub const SoundAsset = enum {
+    challenge_failed,
+    challenge_succeeded,
+    die_boss,
+    die_goei,
+    die_player,
+    die_zako,
+    extra_life,
+    high_score,
+    hit_boss,
+    insert_coin,
+    intro,
+    level_marker,
+    shoot,
+    swoop_idle,
+    swoop,
+    tractor_pickup,
+    tractor_success,
+
+    pub fn filename(self: SoundAsset) []const u8 {
+        return switch (self) {
+            .challenge_failed => "sounds/challenge-failed.mp3",
+            .challenge_succeeded => "sounds/challenge-succeeded.mp3",
+            .die_boss => "sounds/die-boss.mp3",
+            .die_goei => "sounds/die-goei.mp3",
+            .die_player => "sounds/die-player.mp3",
+            .die_zako => "sounds/die-zako.mp3",
+            .extra_life => "sounds/extra-life.mp3",
+            .high_score => "sounds/high-score.mp3",
+            .hit_boss => "sounds/hit-boss.mp3",
+            .insert_coin => "sounds/insert-coin.mp3",
+            .intro => "sounds/intro.mp3",
+            .level_marker => "sounds/level-marker.mp3",
+            .shoot => "sounds/shoot.mp3",
+            .swoop_idle => "sounds/swoop-idle.mp3",
+            .swoop => "sounds/swoop.mp3",
+            .tractor_pickup => "sounds/tractor-pickup.mp3",
+            .tractor_success => "sounds/tractor-success.mp3",
+        };
+    }
+};

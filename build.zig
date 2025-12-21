@@ -11,7 +11,7 @@ pub fn build(b: *std.Build) void {
     const engine_mod = engine_dep.module("engine");
 
     const mod = b.addModule("zalaga", .{
-        .root_source_file = b.path("src/root.zig"),
+        .root_source_file = b.path("src/mod.zig"),
         .target = target,
         .imports = &.{
             .{ .name = "arcade_lib", .module = lib_mod },

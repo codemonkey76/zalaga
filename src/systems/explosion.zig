@@ -1,6 +1,6 @@
 const std = @import("std");
 const engine = @import("engine");
-const Context = @import("../context.zig").Context;
+const Context = @import("../mod.zig").Context;
 const Entity = @import("../entities/entity.zig").Entity;
 
 pub const ExplosionParticle = struct {
@@ -43,7 +43,7 @@ pub const ExplosionSystem = struct {
         while (i < particle_count) : (i += 1) {
             const angle = random.float(f32) * std.math.pi * 2.0;
             const speed = 0.1 + random.float(f32) * 0.2;
-            
+
             const velocity = engine.types.Vec2{
                 .x = @cos(angle) * speed,
                 .y = @sin(angle) * speed,
@@ -66,7 +66,7 @@ pub const ExplosionSystem = struct {
         var i: usize = 0;
         while (i < self.particles.items.len) {
             var particle = &self.particles.items[i];
-            
+
             particle.lifetime -= dt;
             if (particle.lifetime <= 0) {
                 _ = self.particles.swapRemove(i);

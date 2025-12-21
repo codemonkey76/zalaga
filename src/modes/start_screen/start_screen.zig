@@ -1,6 +1,6 @@
 const std = @import("std");
 const engine = @import("engine");
-const Context = @import("../../context.zig").Context;
+const Context = @import("../../mod.zig").Context;
 const GameMode = @import("../mode.zig").GameMode;
 const GameState = @import("../../core/game_state.zig").GameState;
 
@@ -13,7 +13,7 @@ pub const StartScreen = struct {
 
         // Press 1 to start 1-player game
         if (ctx.input.isKeyPressed(.one)) {
-            ctx.audio.playSound(.intro);
+            ctx.assets.playSound(.intro);
             return .playing;
         }
 

@@ -1,6 +1,6 @@
 const std = @import("std");
 const engine = @import("engine");
-const Context = @import("../context.zig").Context;
+const Context = @import("../mod.zig").Context;
 const Color = engine.types.Color;
 const GameState = @import("../core/game_state.zig").GameState;
 const PlayerState = @import("../gameplay/player_state.zig");

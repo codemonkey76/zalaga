@@ -1,6 +1,6 @@
 const std = @import("std");
 const engine = @import("engine");
-const Context = @import("../context.zig").Context;
+const Context = @import("../mod.zig").Context;
 const Entity = @import("../entities/entity.zig").Entity;
 const EntityManager = @import("../entities/entity_manager.zig").EntityManager;
 const EntityType = @import("../entities/entity.zig").EntityType;
@@ -61,7 +61,7 @@ pub const PlayerController = struct {
 
         if (bullet_count >= 2) return;
 
-        ctx.audio.playSound(.shoot);
+        ctx.assets.playSound(.shoot);
 
         const bullet_pos = engine.types.Vec2{
             .x = player.position.x,

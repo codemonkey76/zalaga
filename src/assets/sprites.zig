@@ -1,11 +1,8 @@
 const std = @import("std");
 const engine = @import("engine");
-const Context = @import("../context.zig").Context;
-const SpriteLayoutBuilder = engine.graphics.SpriteLayoutBuilder;
-const SpriteLayout = engine.graphics.SpriteLayout;
-const RotationSet = engine.graphics.RotationSet;
-const RotationFrame = engine.graphics.RotationFrame;
-const Texture = engine.graphics.Texture;
+
+const Context = @import("../mod.zig").Context;
+const g = engine.graphics;
 
 pub const SpriteType = enum {
     player,
@@ -54,17 +51,17 @@ pub const ExplosionSpriteId = enum {
 pub const Sprites = struct {
     allocator: std.mem.Allocator,
 
-    layouts: std.AutoHashMap(SpriteType, SpriteLayout(SpriteId)),
-    rotations: std.AutoHashMap(SpriteType, RotationSet(SpriteId)),
-    bullet_layout: SpriteLayout(BulletSpriteId),
-    explosion_layout: SpriteLayout(ExplosionSpriteId),
+    layouts: std.AutoHashMap(SpriteType, g.SpriteLayout(SpriteId)),
+    rotations: std.AutoHashMap(SpriteType, g.RotationSet(SpriteId)),
+    bullet_layout: g.SpriteLayout(BulletSpriteId),
+    explosion_layout: g.SpriteLayout(ExplosionSpriteId),
 
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator, ctx: *Context) !Self {
-        const sprite_sheet = try ctx.assets.loadTexture("textures/spritesheet.png", engine.types.Color.black);
-        var layouts = std.AutoHashMap(SpriteType, SpriteLayout(SpriteId)).init(allocator);
-        var rotations = std.AutoHashMap(SpriteType, RotationSet(SpriteId)).init(allocator);
+        const sprite_sheet = try ctx.assets.loadTexture(.sprite_sheet);
+        var layouts = std.AutoHashMap(SpriteType, g.SpriteLayout(SpriteId)).init(allocator);
+        var rotations = std.AutoHashMap(SpriteType, g.RotationSet(SpriteId)).init(allocator);
 
         try initSprite(allocator, sprite_sheet, &layouts, &rotations, .player, 0);
         try initSprite(allocator, sprite_sheet, &layouts, &rotations, .player_alt, 1);
@@ -93,13 +90,13 @@ pub const Sprites = struct {
 
     pub fn initSprite(
         allocator: std.mem.Allocator,
-        texture: Texture,
-        layouts: *std.AutoHashMap(SpriteType, SpriteLayout(SpriteId)),
-        rotations: *std.AutoHashMap(SpriteType, RotationSet(SpriteId)),
+        texture: g.Texture,
+        layouts: *std.AutoHashMap(SpriteType, g.SpriteLayout(SpriteId)),
+        rotations: *std.AutoHashMap(SpriteType, g.RotationSet(SpriteId)),
         sprite_type: SpriteType,
         row: f32,
     ) !void {
-        var builder = SpriteLayoutBuilder(SpriteId).init(allocator, texture);
+        var builder = g.SpriteLayoutBuilder(SpriteId).init(allocator, texture);
 
         try builder.addSprite(.rotation_180, 1 + (0 * (16 + 2)), 1 + (row * (16 + 2)), 16, 16);
         try builder.addSprite(.rotation_165, 1 + (1 * (16 + 2)), 1 + (row * (16 + 2)), 16, 16);
@@ -114,7 +111,7 @@ pub const Sprites = struct {
 
         const layout = builder.build();
 
-        const rot_frames = try allocator.alloc(RotationFrame(SpriteId), 7);
+        const rot_frames = try allocator.alloc(g.RotationFrame(SpriteId), 7);
         rot_frames[0] = .{ .id = .rotation_180, .angle = 180.0 };
         rot_frames[1] = .{ .id = .rotation_165, .angle = 165.0 };
         rot_frames[2] = .{ .id = .rotation_150, .angle = 150.0 };
@@ -124,7 +121,7 @@ pub const Sprites = struct {
         rot_frames[6] = .{ .id = .rotation_90, .angle = 90.0 };
 
         try layouts.put(sprite_type, layout);
-        try rotations.put(sprite_type, RotationSet(SpriteId){
+        try rotations.put(sprite_type, g.RotationSet(SpriteId){
             .layout = layout,
             .frames = rot_frames,
             .allow_horizontal_flip = true,
@@ -132,8 +129,8 @@ pub const Sprites = struct {
         });
     }
 
-    fn initBullets(allocator: std.mem.Allocator, texture: Texture) !SpriteLayout(BulletSpriteId) {
-        var builder = SpriteLayoutBuilder(BulletSpriteId).init(allocator, texture);
+    fn initBullets(allocator: std.mem.Allocator, texture: g.Texture) !g.SpriteLayout(BulletSpriteId) {
+        var builder = g.SpriteLayoutBuilder(BulletSpriteId).init(allocator, texture);
 
         // Bullet at x=307, y=118
         try builder.addSprite(.player_bullet, 307, 118, 16, 16);
@@ -142,8 +139,8 @@ pub const Sprites = struct {
         return builder.build();
     }
 
-    fn initExplosions(allocator: std.mem.Allocator, texture: Texture) !SpriteLayout(ExplosionSpriteId) {
-        var builder = SpriteLayoutBuilder(ExplosionSpriteId).init(allocator, texture);
+    fn initExplosions(allocator: std.mem.Allocator, texture: g.Texture) !g.SpriteLayout(ExplosionSpriteId) {
+        var builder = g.SpriteLayoutBuilder(ExplosionSpriteId).init(allocator, texture);
 
         // Player explosion: 4 frames, 32x32, starting at x=145, y=1
         try builder.addSprite(.player_frame_1, 145, 1, 32, 32);
@@ -177,22 +174,22 @@ pub const Sprites = struct {
     }
 
     /// Get layout for a sprite type
-    pub fn getLayout(self: *Self, sprite_type: SpriteType) ?SpriteLayout(SpriteId) {
+    pub fn getLayout(self: *Self, sprite_type: SpriteType) ?g.SpriteLayout(SpriteId) {
         return self.layouts.get(sprite_type);
     }
 
     /// Get rotation set for a sprite type
-    pub fn getRotationSet(self: *Self, sprite_type: SpriteType) ?RotationSet(SpriteId) {
+    pub fn getRotationSet(self: *Self, sprite_type: SpriteType) ?g.RotationSet(SpriteId) {
         return self.rotations.get(sprite_type);
     }
 
     /// Get a bullet sprite by ID
-    pub fn getBulletSprite(self: *Self, bullet_id: BulletSpriteId) ?engine.graphics.Sprite {
+    pub fn getBulletSprite(self: *Self, bullet_id: BulletSpriteId) ?g.Sprite {
         return self.bullet_layout.getSprite(bullet_id);
     }
 
     /// Get an explosion sprite by ID
-    pub fn getExplosionSprite(self: *Self, explosion_id: ExplosionSpriteId) ?engine.graphics.Sprite {
+    pub fn getExplosionSprite(self: *Self, explosion_id: ExplosionSpriteId) ?g.Sprite {
         return self.explosion_layout.getSprite(explosion_id);
     }
 };

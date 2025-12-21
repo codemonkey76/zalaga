@@ -1,6 +1,6 @@
 const std = @import("std");
 const engine = @import("engine");
-const Context = @import("../context.zig").Context;
+const Context = @import("../mod.zig").Context;
 const types = engine.types;
 
 const Star = struct {

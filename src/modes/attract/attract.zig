@@ -1,6 +1,6 @@
 const std = @import("std");
 const engine = @import("engine");
-const Context = @import("../../context.zig").Context;
+const Context = @import("../../mod.zig").Context;
 const GameMode = @import("../mode.zig").GameMode;
 const GameState = @import("../../core/game_state.zig").GameState;
 const SpriteId = @import("../../assets/sprites.zig").SpriteId;
@@ -89,7 +89,7 @@ pub const Attract = struct {
 
         // Check for coin insertion
         if (ctx.input.isKeyPressed(.five)) {
-            ctx.audio.playSound(.insert_coin);
+            ctx.assets.playSound(.insert_coin);
             return .start_screen;
         }
 
