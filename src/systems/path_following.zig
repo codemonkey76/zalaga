@@ -4,44 +4,34 @@ const Entity = @import("../entities/entity.zig").Entity;
 const MovementBehavior = @import("../entities/entity.zig").MovementBehavior;
 const Context = @import("../mod.zig").Context;
 const arcade_lib = @import("arcade_lib");
+const PathCache = @import("path_cache.zig").PathCache;
 
 pub const PathFollowingSystem = struct {
-    pub fn update(entities: []Entity, ctx: *Context, dt: f32) void {
+    path_cache: PathCache,
+    
+    const Self = @This();
+    
+    pub fn init(allocator: std.mem.Allocator) Self {
+        return .{
+            .path_cache = PathCache.init(allocator),
+        };
+    }
+    
+    pub fn deinit(self: *Self) void {
+        self.path_cache.deinit();
+    }
+    
+    pub fn update(self: *Self, entities: []Entity, ctx: *Context, dt: f32) !void {
         for (entities) |*entity| {
             if (!entity.active) continue;
             if (entity.behavior != .path_following) continue;
             
             const path_asset = entity.current_path orelse continue;
             
-            // Load the path (cached by asset manager)
-            const path = ctx.assets.getPath(path_asset) orelse {
-                std.debug.print("Warning: Path {s} not loaded for entity {d}\n", .{
-                    @tagName(path_asset),
-                    entity.id,
-                });
+            // Get cached PathDefinition
+            const path_def = self.path_cache.getPathDefinition(ctx, path_asset) catch |err| {
+                std.debug.print("Error getting path definition for {s}: {any}\n", .{ @tagName(path_asset), err });
                 continue;
-            };
-            
-            // Manually build Vec2 array from anchors (workaround for type mismatch)
-            var points = std.ArrayList(arcade_lib.Vec2){};
-            defer points.deinit(ctx.allocator);
-            
-            for (path.anchors) |anchor| {
-                points.append(ctx.allocator, .{ .x = anchor.pos.x, .y = anchor.pos.y }) catch continue;
-            }
-            
-            // Convert points to control points
-            const control_points = arcade_lib.PathDefinition.fromPoints(
-                ctx.allocator,
-                points.items,
-            ) catch |err| {
-                std.debug.print("Error converting path {s}: {any}\n", .{ @tagName(path_asset), err });
-                continue;
-            };
-            defer ctx.allocator.free(control_points);
-            
-            const path_def = arcade_lib.PathDefinition{
-                .control_points = control_points,
             };
             
             // Advance along path
@@ -69,19 +59,21 @@ pub const PathFollowingSystem = struct {
                 .y = arcade_pos.y,
             };
             
-            // Calculate angle based on movement direction
-            if (entity.path_t > 0.01) {
-                const prev_arcade_pos = path_def.getPosition(entity.path_t - 0.01);
-                const prev_pos = engine.types.Vec2{
-                    .x = prev_arcade_pos.x,
-                    .y = prev_arcade_pos.y,
+            // Calculate angle based on movement direction (look ahead)
+            if (entity.path_t < 0.99) {
+                const next_arcade_pos = path_def.getPosition(entity.path_t + 0.01);
+                const next_pos = engine.types.Vec2{
+                    .x = next_arcade_pos.x,
+                    .y = next_arcade_pos.y,
                 };
                 
-                const dx = entity.position.x - prev_pos.x;
-                const dy = entity.position.y - prev_pos.y;
+                // Direction vector pointing where we're going
+                const dx = next_pos.x - entity.position.x;
+                const dy = next_pos.y - entity.position.y;
                 
                 if (dx != 0 or dy != 0) {
-                    entity.angle = std.math.atan2(dy, dx) * 180.0 / std.math.pi;
+                    // Reverse direction - enemies face opposite of travel initially
+                    entity.angle = std.math.radiansToDegrees(std.math.atan2(-dy, -dx)) + 90.0;
                 }
             }
         }

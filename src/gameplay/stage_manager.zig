@@ -145,8 +145,10 @@ pub const StageManager = struct {
         enemy_spawn: *const EnemySpawn,
         group: *const SpawnGroup,
     ) !void {
-        // Load the entry path
-        const path = try ctx.assets.loadPaths(group.entry_path);
+        // Get the cached entry path (should already be loaded)
+        const path = ctx.assets.getPath(group.entry_path) orelse {
+            return error.PathNotLoaded;
+        };
         
         // Manually build Vec2 array from anchors (workaround for type mismatch)
         var points = std.ArrayList(arcade_lib.Vec2){};

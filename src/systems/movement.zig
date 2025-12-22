@@ -38,6 +38,13 @@ pub const MovementSystem = struct {
             entity.position = target;
             entity.target_pos = null;
             entity.velocity = .{ .x = 0, .y = 0 };
+            
+            // If moving to formation, switch to formation_idle and reset sprite
+            if (entity.behavior == .move_to_target and entity.formation_pos != null) {
+                entity.behavior = .formation_idle;
+                entity.sprite_id = .idle_1;
+                entity.angle = 0;
+            }
         } else {
             // Move toward target
             entity.velocity.x = (dir.dx / dir.dist) * entity.move_speed;

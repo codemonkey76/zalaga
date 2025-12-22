@@ -148,3 +148,28 @@ pub const stage_1 = StageDefinition{
     .attack_frequency = 0.8,
     .speed_multiplier = 1.0,
 };
+
+// Debug stage - Single enemy for testing rotation
+pub const stage_debug = StageDefinition{
+    .stage_number = 0,
+    .stage_type = .normal,
+    .waves = &.{
+        .{
+            .groups = &.{
+                .{
+                    .enemies = &.{
+                        .{ .enemy_type = .goei, .grid_pos = .{ .row = 1, .col = 3 }, .spawn_delay = 0.0 },
+                    },
+                    .entry_path = .level_1_1_left,
+                    .exit_path = null,
+                    .group_delay = 0.0,
+                },
+            },
+            .wave_delay = 0.0,
+        },
+    },
+    .can_shoot_during_entry = false,
+    .attack_delay = 99999.0,
+    .attack_frequency = 0.0,
+    .speed_multiplier = 1.0,
+};

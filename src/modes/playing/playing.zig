@@ -13,7 +13,9 @@ const ExplosionSystem = @import("../../systems/explosion.zig").ExplosionSystem;
 const SpriteExplosionSystem = @import("../../systems/sprite_explosion.zig").SpriteExplosionSystem;
 const MovementSystem = @import("../../systems/movement.zig").MovementSystem;
 const PathFollowingSystem = @import("../../systems/path_following.zig").PathFollowingSystem;
+const FormationSystem = @import("../../systems/formation.zig").FormationSystem;
 const StageManager = @import("../../gameplay/stage_manager.zig").StageManager;
+const DebugMode = @import("../../core/debug_mode.zig").DebugMode;
 const level_def = @import("../../gameplay/level_definition.zig");
 
 pub const Playing = struct {
@@ -22,7 +24,10 @@ pub const Playing = struct {
     player_controller: PlayerController,
     explosion_system: ExplosionSystem,
     sprite_explosion_system: SpriteExplosionSystem,
+    path_following_system: PathFollowingSystem,
+    formation_system: FormationSystem,
     stage_manager: StageManager,
+    debug_mode: DebugMode,
     player_id: ?u32,
 
     const Self = @This();
@@ -35,15 +40,26 @@ pub const Playing = struct {
             .player_controller = PlayerController{},
             .explosion_system = ExplosionSystem.init(allocator),
             .sprite_explosion_system = SpriteExplosionSystem.init(allocator),
-            .stage_manager = StageManager.init(allocator, &level_def.stage_1),
+            .path_following_system = PathFollowingSystem.init(allocator),
+            .formation_system = FormationSystem.init(),
+            .stage_manager = StageManager.init(allocator, &level_def.stage_debug), // Use debug stage
+            .debug_mode = DebugMode.init(),
             .player_id = null,
         };
     }
 
     pub fn update(self: *Self, ctx: *Context, dt: f32, state: *GameState) !?GameMode {
+        // Update debug mode controls
+        self.debug_mode.update(ctx);
+
+        // Only update game logic if not paused or stepping one frame
+        if (!self.debug_mode.shouldUpdate()) {
+            return null;
+        }
+
         // Update stage manager (spawns enemies)
         try self.stage_manager.update(ctx, &state.entity_manager, dt);
-        
+
         // Spawn player if not present
         if (self.player_id == null) {
             self.player_id = try state.entity_manager.spawnPlayer(.{ .x = 0.5, .y = 0.85 });
@@ -57,10 +73,13 @@ pub const Playing = struct {
         }
 
         // Update path following for enemies
-        PathFollowingSystem.update(state.entity_manager.getAll(), ctx, dt);
+        try self.path_following_system.update(state.entity_manager.getAll(), ctx, dt);
 
         // Update movement for all entities
         MovementSystem.update(state.entity_manager.getAll(), dt);
+
+        // Update formation breathing
+        self.formation_system.update(state.entity_manager.getAll(), dt);
 
         // Check collisions
         try self.collision_system.checkCollisions(state.entity_manager.getAll());
@@ -109,6 +128,15 @@ pub const Playing = struct {
                 // Draw sprite-based entities
                 if (entity.sprite_id) |sprite_id| {
                     if (state.sprites.getSprite(sprite_type, sprite_id)) |sprite| {
+                        // Use rotation set if entity is moving
+                        if (entity.isMoving()) {
+                            if (state.sprites.getRotationSet(sprite_type)) |rotation_set| {
+                                if (rotation_set.getSpriteForAngle(entity.angle)) |flipped| {
+                                    ctx.renderer.drawFlippedSprite(flipped, entity.position);
+                                    continue;
+                                }
+                            }
+                        }
                         ctx.renderer.drawSprite(sprite, entity.position);
                     }
                 }
@@ -118,6 +146,52 @@ pub const Playing = struct {
         // Draw explosions
         self.explosion_system.draw(ctx);
         self.sprite_explosion_system.draw(ctx, state);
+
+        // Draw debug info
+        if (self.debug_mode.enabled and self.debug_mode.show_angles) {
+            self.drawDebugInfo(ctx, state);
+        }
+    }
+
+    fn drawDebugInfo(self: *Self, ctx: *Context, state: *GameState) void {
+        _ = self;
+
+        var buffer: [256]u8 = undefined;
+        var y_offset: f32 = 0.15;
+
+        // Draw debug instructions
+        const instructions = "P=Pause  SPACE=Step  A=Toggle Angles";
+        ctx.renderer.text.drawText(instructions, .{ .x = 0.02, .y = y_offset }, 10, engine.types.Color.yellow);
+        y_offset += 0.03;
+
+        // Draw entity info for each enemy
+        for (state.entity_manager.getAll()) |entity| {
+            if (!entity.active) continue;
+            if (entity.type == .player or entity.type == .projectile) continue;
+
+            // Draw angle info next to entity
+            const text = std.fmt.bufPrint(&buffer, "Angle: {d:.1}\nBehavior: {s}\nPathT: {d:.2}", .{
+                entity.angle,
+                @tagName(entity.behavior),
+                entity.path_t,
+            }) catch "Error";
+
+            const text_pos = engine.types.Vec2{
+                .x = entity.position.x + 0.05,
+                .y = entity.position.y,
+            };
+            const cyan = engine.types.Color{ .r = 0, .g = 255, .b = 255, .a = 255 };
+            ctx.renderer.text.drawText(text, text_pos, 6, cyan);
+
+            // Draw direction line
+            const line_length: f32 = 0.05;
+            const angle_rad = entity.angle * std.math.pi / 180.0;
+            const end_pos = engine.types.Vec2{
+                .x = entity.position.x + @cos(angle_rad - std.math.pi / 2.0) * line_length,
+                .y = entity.position.y + @sin(angle_rad - std.math.pi / 2.0) * line_length,
+            };
+            ctx.renderer.drawLine(entity.position, end_pos, 2, engine.types.Color.red);
+        }
     }
 
     pub fn deinit(self: *Self, ctx: *Context) void {
@@ -125,6 +199,7 @@ pub const Playing = struct {
         self.collision_system.deinit();
         self.explosion_system.deinit();
         self.sprite_explosion_system.deinit();
+        self.path_following_system.deinit();
         self.stage_manager.deinit();
     }
 
@@ -177,7 +252,7 @@ pub const Playing = struct {
             .zako => ctx.assets.playSound(.die_zako),
             .projectile => {}, // No sound for projectiles
         }
-        
+
         // Spawn sprite explosion
         switch (entity.type) {
             .player => try self.sprite_explosion_system.spawnPlayerExplosion(entity.position),

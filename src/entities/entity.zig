@@ -64,7 +64,11 @@ pub const Entity = struct {
     const Self = @This();
     
     pub fn isMoving(self: Self) bool {
-        return self.target_pos != null or self.velocity.x != 0 or self.velocity.y != 0;
+        return self.behavior == .path_following or 
+               self.behavior == .move_to_target or 
+               self.target_pos != null or 
+               self.velocity.x != 0 or 
+               self.velocity.y != 0;
     }
     
     pub fn isOffscreen(self: Self, margin: f32) bool {
