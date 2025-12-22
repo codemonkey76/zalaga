@@ -9,6 +9,6 @@ pub const FontAsset = enum {
 
     pub fn size(self: FontAsset) ?i32 {
         _ = self;
-        return 18;
+        return 128; // Load at high resolution for crisp scaling
     }
 };

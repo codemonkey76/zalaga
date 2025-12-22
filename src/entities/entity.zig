@@ -1,7 +1,16 @@
 const std = @import("std");
 const engine = @import("engine");
+const PathAsset = @import("../assets/path_asset.zig").PathAsset;
 
 pub const EntityId = u32;
+
+/// Entity movement behavior
+pub const MovementBehavior = enum {
+    idle,
+    path_following,
+    move_to_target,
+    formation_idle,
+};
 
 /// Entity type classification
 pub const EntityType = enum {
@@ -45,9 +54,11 @@ pub const Entity = struct {
     health: i32,
     
     // Movement state
+    behavior: MovementBehavior,
+    current_path: ?PathAsset,
+    formation_pos: ?engine.types.Vec2,
     target_pos: ?engine.types.Vec2,
     move_speed: f32,
-    path_index: usize,
     path_t: f32,
     
     const Self = @This();

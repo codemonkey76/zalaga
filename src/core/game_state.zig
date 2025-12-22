@@ -27,11 +27,9 @@ pub const GameState = struct {
     const Self = @This();
 
     pub fn init(self: *Self, allocator: std.mem.Allocator, ctx: *z.Context) !void {
+        try self.loadAssets(ctx);
+
         // Preload all sounds
-        inline for (@typeInfo(z.assets.SoundAsset).@"enum".fields) |field| {
-            const sound_asset = @field(z.assets.SoundAsset, field.name);
-            _ = try ctx.assets.loadSound(sound_asset);
-        }
         self.sprites = try z.assets.Sprites.init(allocator, ctx);
         self.hud = z.rendering.Hud.init(allocator);
         self.starfield = try z.rendering.Starfield.init(allocator, ctx, .{ .parallax_strength = 400.0 });
@@ -46,14 +44,43 @@ pub const GameState = struct {
         self.high_score = 20000;
         self.credits = 0;
         self.mode_state = .{ .attract = try z.modes.AttractMode.init(allocator, ctx) };
+    }
+    fn loadAssets(self: *Self, ctx: *z.Context) !void {
+        try self.loadSounds(ctx);
+        try self.loadFonts(ctx);
+    }
 
-        // Load Cousine-Regular font
+    fn loadSounds(_: *Self, ctx: *z.Context) !void {
+        inline for (@typeInfo(z.assets.SoundAsset).@"enum".fields) |field| {
+            const sound_asset = @field(z.assets.SoundAsset, field.name);
+            _ = try ctx.assets.loadSound(sound_asset);
+        }
+        ctx.assets.playSound(.die_player);
+    }
+
+    fn loadFonts(_: *Self, ctx: *z.Context) !void {
         const font = try ctx.assets.loadFont(.main_font);
         ctx.setFont(font.handle);
-        ctx.assets.playSound(.die_boss);
+    }
+
+    fn addCredit(self: *Self, ctx: *z.Context) void {
+        if (self.credits < 99) {
+            self.credits += 1;
+            ctx.assets.playSound(.insert_coin);
+        }
     }
 
     pub fn update(self: *Self, ctx: *z.Context, dt: f32) !void {
+        // Track if we just added a credit
+        const had_credits = self.credits > 0;
+        const old_credits = self.credits;
+
+        if (ctx.input.isKeyPressed(.five)) {
+            self.addCredit(ctx);
+        }
+
+        const credits_added = self.credits > old_credits;
+
         // Get player x position for starfield parallax
         var player_x: f32 = 0.5; // Default to center
         if (self.mode_state == .playing) {
@@ -69,6 +96,14 @@ pub const GameState = struct {
 
         const new_mode = switch (self.mode_state) {
             .playing => |*mode| try mode.update(ctx, dt, self),
+            .attract => |*mode| blk: {
+                // If we're in attract mode and a credit was added, go to start screen
+                if (credits_added and !had_credits) {
+                    break :blk @as(?z.modes.GameMode, .start_screen);
+                }
+                break :blk try mode.update(ctx, dt);
+            },
+            .start_screen => |*mode| try mode.update(ctx, dt, self),
             inline else => |*mode| try mode.update(ctx, dt),
         };
 

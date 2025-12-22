@@ -10,13 +10,19 @@ const CollisionSystem = @import("../../systems/collision.zig").CollisionSystem;
 const CollisionPair = @import("../../systems/collision.zig").CollisionPair;
 const PlayerController = @import("../../systems/player_controller.zig").PlayerController;
 const ExplosionSystem = @import("../../systems/explosion.zig").ExplosionSystem;
+const SpriteExplosionSystem = @import("../../systems/sprite_explosion.zig").SpriteExplosionSystem;
 const MovementSystem = @import("../../systems/movement.zig").MovementSystem;
+const PathFollowingSystem = @import("../../systems/path_following.zig").PathFollowingSystem;
+const StageManager = @import("../../gameplay/stage_manager.zig").StageManager;
+const level_def = @import("../../gameplay/level_definition.zig");
 
 pub const Playing = struct {
     allocator: std.mem.Allocator,
     collision_system: CollisionSystem,
     player_controller: PlayerController,
     explosion_system: ExplosionSystem,
+    sprite_explosion_system: SpriteExplosionSystem,
+    stage_manager: StageManager,
     player_id: ?u32,
 
     const Self = @This();
@@ -28,11 +34,16 @@ pub const Playing = struct {
             .collision_system = CollisionSystem.init(allocator),
             .player_controller = PlayerController{},
             .explosion_system = ExplosionSystem.init(allocator),
+            .sprite_explosion_system = SpriteExplosionSystem.init(allocator),
+            .stage_manager = StageManager.init(allocator, &level_def.stage_1),
             .player_id = null,
         };
     }
 
     pub fn update(self: *Self, ctx: *Context, dt: f32, state: *GameState) !?GameMode {
+        // Update stage manager (spawns enemies)
+        try self.stage_manager.update(ctx, &state.entity_manager, dt);
+        
         // Spawn player if not present
         if (self.player_id == null) {
             self.player_id = try state.entity_manager.spawnPlayer(.{ .x = 0.5, .y = 0.85 });
@@ -45,6 +56,9 @@ pub const Playing = struct {
             try self.player_controller.update(player, &state.entity_manager, ctx, dt);
         }
 
+        // Update path following for enemies
+        PathFollowingSystem.update(state.entity_manager.getAll(), ctx, dt);
+
         // Update movement for all entities
         MovementSystem.update(state.entity_manager.getAll(), dt);
 
@@ -53,11 +67,12 @@ pub const Playing = struct {
 
         // Process collisions
         for (self.collision_system.getCollisions()) |collision| {
-            try self.handleCollision(collision, state);
+            try self.handleCollision(collision, state, ctx);
         }
 
         // Update explosions
         self.explosion_system.update(dt);
+        self.sprite_explosion_system.update(dt);
 
         // Clean up dead entities
         state.entity_manager.compact();
@@ -102,15 +117,18 @@ pub const Playing = struct {
 
         // Draw explosions
         self.explosion_system.draw(ctx);
+        self.sprite_explosion_system.draw(ctx, state);
     }
 
     pub fn deinit(self: *Self, ctx: *Context) void {
         _ = ctx;
         self.collision_system.deinit();
         self.explosion_system.deinit();
+        self.sprite_explosion_system.deinit();
+        self.stage_manager.deinit();
     }
 
-    fn handleCollision(self: *Self, collision: CollisionPair, state: *GameState) !void {
+    fn handleCollision(self: *Self, collision: CollisionPair, state: *GameState, ctx: *Context) !void {
         var entity_a = state.entity_manager.get(collision.entity_a) orelse return;
         var entity_b = state.entity_manager.get(collision.entity_b) orelse return;
 
@@ -123,11 +141,11 @@ pub const Playing = struct {
         entity_b.health -= 1;
 
         if (entity_a.health <= 0) {
-            try self.spawnExplosionFor(entity_a, state);
+            try self.spawnExplosionFor(entity_a, state, ctx);
             entity_a.active = false;
         }
         if (entity_b.health <= 0) {
-            try self.spawnExplosionFor(entity_b, state);
+            try self.spawnExplosionFor(entity_b, state, ctx);
             entity_b.active = false;
         }
 
@@ -150,22 +168,25 @@ pub const Playing = struct {
         }
     }
 
-    fn spawnExplosionFor(self: *Self, entity: *Entity, state: *GameState) !void {
-        _ = state;
-
-        const color = switch (entity.type) {
-            .player => engine.types.Color.sky_blue,
-            .boss, .goei, .zako => engine.types.Color.red,
-            .projectile => engine.types.Color.yellow,
-        };
-
-        const particle_count: u32 = switch (entity.type) {
-            .player => 30,
-            .boss => 20,
-            .goei, .zako => 15,
-            .projectile => 5,
-        };
-
-        try self.explosion_system.spawnExplosion(entity.position, color, particle_count);
+    fn spawnExplosionFor(self: *Self, entity: *Entity, _: *GameState, ctx: *Context) !void {
+        // Play death sound based on entity type
+        switch (entity.type) {
+            .player => ctx.assets.playSound(.die_player),
+            .boss => ctx.assets.playSound(.die_boss),
+            .goei => ctx.assets.playSound(.die_goei),
+            .zako => ctx.assets.playSound(.die_zako),
+            .projectile => {}, // No sound for projectiles
+        }
+        
+        // Spawn sprite explosion
+        switch (entity.type) {
+            .player => try self.sprite_explosion_system.spawnPlayerExplosion(entity.position),
+            .boss, .goei, .zako => try self.sprite_explosion_system.spawnEnemyExplosion(entity.position),
+            .projectile => {
+                // Projectiles just get particle effects
+                const particle_count: u32 = 5;
+                try self.explosion_system.spawnExplosion(entity.position, engine.types.Color.yellow, particle_count);
+            },
+        }
     }
 };

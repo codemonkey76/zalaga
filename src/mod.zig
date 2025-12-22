@@ -2,9 +2,12 @@ const engine = @import("engine");
 pub const Game = @import("game.zig").Game;
 pub const GameState = @import("core/game_state.zig").GameState;
 pub const PlayerState = @import("gameplay/player_state.zig").PlayerState;
+pub const StageState = @import("gameplay/stage.zig").StageState;
+pub const StageDefinition = @import("gameplay/stage.zig").StageDefinition;
 
 pub const assets = struct {
     pub const Sprites = @import("assets/sprites.zig").Sprites;
+    pub const SpriteType = @import("assets/sprites.zig").SpriteType;
     pub const TextureAsset = @import("assets/texture_asset.zig").TextureAsset;
     pub const FontAsset = @import("assets/font_asset.zig").FontAsset;
     pub const PathAsset = @import("assets/path_asset.zig").PathAsset;
@@ -41,3 +44,4 @@ pub const modes = struct {
 };
 
 pub const EntityManager = @import("entities/entity_manager.zig").EntityManager;
+pub const EntityType = @import("entities/entity.zig").EntityType;

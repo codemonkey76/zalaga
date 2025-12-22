@@ -87,12 +87,6 @@ pub const Attract = struct {
             .info => try self.updateInfo(ctx, dt),
         }
 
-        // Check for coin insertion
-        if (ctx.input.isKeyPressed(.five)) {
-            ctx.assets.playSound(.insert_coin);
-            return .start_screen;
-        }
-
         return null;
     }
 

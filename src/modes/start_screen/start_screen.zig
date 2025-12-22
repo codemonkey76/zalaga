@@ -7,12 +7,13 @@ const GameState = @import("../../core/game_state.zig").GameState;
 pub const StartScreen = struct {
     const Self = @This();
 
-    pub fn update(self: *Self, ctx: *Context, dt: f32) !?GameMode {
+    pub fn update(self: *Self, ctx: *Context, dt: f32, state: *GameState) !?GameMode {
         _ = self;
         _ = dt;
 
         // Press 1 to start 1-player game
-        if (ctx.input.isKeyPressed(.one)) {
+        if (ctx.input.isKeyPressed(.one) and state.credits > 0) {
+            state.credits -= 1;
             ctx.assets.playSound(.intro);
             return .playing;
         }
@@ -22,12 +23,20 @@ pub const StartScreen = struct {
 
     pub fn draw(self: *Self, ctx: *Context, state: *GameState) !void {
         _ = self;
-        _ = state;
 
-        // Show instructions
-        ctx.renderer.text.drawTextCentered("PRESS 1 TO START", 0.4, 10, engine.types.Color.white);
-        ctx.renderer.text.drawTextCentered("MOVE: ARROW KEYS OR WASD", 0.5, 8, engine.types.Color.gray);
-        ctx.renderer.text.drawTextCentered("SHOOT: SPACE OR Z", 0.55, 8, engine.types.Color.gray);
+        ctx.renderer.text.drawTextCentered("PUSH START BUTTON", 0.33, 10, engine.types.Color.sky_blue);
+
+        if (state.sprites.getSprite(.player, .idle_1)) |sprite| {
+            ctx.renderer.drawSprite(sprite, .{ .x = 0.15, .y = 0.455 });
+            ctx.renderer.drawSprite(sprite, .{ .x = 0.15, .y = 0.535 });
+            ctx.renderer.drawSprite(sprite, .{ .x = 0.15, .y = 0.615 });
+        }
+
+        ctx.renderer.text.drawText("1ST BONUS for 30000 PTS", .{ .x = 0.23, .y = 0.44 }, 10, engine.types.Color.yellow);
+        ctx.renderer.text.drawText("2ND BONUS FOR 100000 PTS", .{ .x = 0.23, .y = 0.52 }, 10, engine.types.Color.yellow);
+        ctx.renderer.text.drawText("AND FOR EVERY 100000 PTS", .{ .x = 0.23, .y = 0.60 }, 10, engine.types.Color.yellow);
+
+        ctx.renderer.text.drawTextCentered("© 1981 NAMCO LTD.", 0.8, 10, engine.types.Color.white);
     }
 
     pub fn deinit(self: *Self, ctx: *Context) void {

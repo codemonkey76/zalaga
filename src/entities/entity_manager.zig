@@ -47,9 +47,11 @@ pub const EntityManager = struct {
             .collision_layer = .player,
             .collision_enabled = true,
             .health = 1,
+            .behavior = .idle,
+            .current_path = null,
+            .formation_pos = null,
             .target_pos = null,
             .move_speed = 0,
-            .path_index = 0,
             .path_t = 0,
         });
     }
@@ -75,9 +77,11 @@ pub const EntityManager = struct {
             .collision_layer = .enemy,
             .collision_enabled = true,
             .health = 1,
+            .behavior = .idle,
+            .current_path = null,
+            .formation_pos = null,
             .target_pos = null,
-            .move_speed = 0,
-            .path_index = 0,
+            .move_speed = 0.3,
             .path_t = 0,
         });
     }
@@ -115,9 +119,11 @@ pub const EntityManager = struct {
             .collision_layer = projectile_layer,
             .collision_enabled = true,
             .health = 1,
+            .behavior = .idle,
+            .current_path = null,
+            .formation_pos = null,
             .target_pos = null,
             .move_speed = 0,
-            .path_index = 0,
             .path_t = 0,
         });
     }
