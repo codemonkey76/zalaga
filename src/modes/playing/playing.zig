@@ -1,5 +1,6 @@
 const std = @import("std");
 const engine = @import("engine");
+const arcade_lib = @import("arcade_lib");
 const Context = @import("../../mod.zig").Context;
 const GameMode = @import("../mode.zig").GameMode;
 const GameState = @import("../../core/game_state.zig").GameState;
@@ -17,6 +18,7 @@ const FormationSystem = @import("../../systems/formation.zig").FormationSystem;
 const StageManager = @import("../../gameplay/stage_manager.zig").StageManager;
 const DebugMode = @import("../../core/debug_mode.zig").DebugMode;
 const level_def = @import("../../gameplay/level_definition.zig");
+const PathAsset = @import("../../assets/path_asset.zig").PathAsset;
 
 pub const Playing = struct {
     allocator: std.mem.Allocator,
@@ -29,6 +31,7 @@ pub const Playing = struct {
     stage_manager: StageManager,
     debug_mode: DebugMode,
     player_id: ?u32,
+    drawn_paths: std.AutoArrayHashMap(PathAsset, void),
 
     const Self = @This();
 
@@ -42,9 +45,10 @@ pub const Playing = struct {
             .sprite_explosion_system = SpriteExplosionSystem.init(allocator),
             .path_following_system = PathFollowingSystem.init(allocator),
             .formation_system = FormationSystem.init(),
-            .stage_manager = StageManager.init(allocator, &level_def.stage_1), // Use debug stage
+            .stage_manager = StageManager.init(allocator, &level_def.stage_debug),
             .debug_mode = DebugMode.init(),
             .player_id = null,
+            .drawn_paths = std.AutoArrayHashMap(PathAsset, void).init(allocator),
         };
     }
 
@@ -104,6 +108,33 @@ pub const Playing = struct {
         return null;
     }
 
+    fn drawPath(self: *Self, path: arcade_lib.PathDefinition, ctx: *Context) void {
+        _ = self;
+        const segments = 300;
+        const step = 1.0 / @as(f32, @floatFromInt(segments));
+
+        var i: usize = 0;
+        while (i < segments) : (i += 1) {
+            const t1 = @as(f32, @floatFromInt(i)) * step;
+            const t2 = @as(f32, @floatFromInt(i + 1)) * step;
+
+            const pos1 = path.getPosition(t1);
+            const pos2 = path.getPosition(t2);
+
+            const p1 = engine.types.Vec2{
+                .x = pos1.x,
+                .y = pos1.y,
+            };
+
+            const p2 = engine.types.Vec2{
+                .x = pos2.x,
+                .y = pos2.y,
+            };
+
+            ctx.renderer.drawLine(p1, p2, 2, engine.types.Color.red);
+        }
+    }
+
     pub fn draw(self: *Self, ctx: *Context, state: *GameState) !void {
         // Draw all entities
         for (state.entity_manager.getAll()) |entity| {
@@ -125,6 +156,16 @@ pub const Playing = struct {
                     ctx.renderer.drawFilledCircle(entity.position, 0.005, color);
                 }
             } else if (entity.sprite_type) |sprite_type| {
+                self.drawn_paths.clearRetainingCapacity();
+
+                const path_asset = entity.current_path orelse continue;
+                if (ctx.assets.paths.get(path_asset)) |path| {
+                    if (!self.drawn_paths.contains(path_asset)) {
+                        self.drawPath(path.definition, ctx);
+                        try self.drawn_paths.put(path_asset, {});
+                    }
+                }
+
                 // Draw sprite-based entities
                 if (entity.sprite_id) |sprite_id| {
                     if (state.sprites.getSprite(sprite_type, sprite_id)) |sprite| {
@@ -160,8 +201,8 @@ pub const Playing = struct {
         var y_offset: f32 = 0.15;
 
         // Draw debug instructions
-        const instructions = "P=Pause  SPACE=Step  A=Toggle Angles";
-        ctx.renderer.text.drawText(instructions, .{ .x = 0.02, .y = y_offset }, 10, engine.types.Color.yellow);
+        const instructions = "P=Pause\nSPACE=Step\nA=Toggle Angles";
+        ctx.renderer.text.drawText(instructions, .{ .x = 0.02, .y = y_offset }, 6, engine.types.Color.yellow);
         y_offset += 0.03;
 
         // Draw entity info for each enemy
@@ -184,11 +225,11 @@ pub const Playing = struct {
             ctx.renderer.text.drawText(text, text_pos, 6, cyan);
 
             // Draw direction line
-            const line_length: f32 = 0.05;
+            const line_length: f32 = 0.10;
             const angle_rad = entity.angle * std.math.pi / 180.0;
             const end_pos = engine.types.Vec2{
-                .x = entity.position.x + @cos(angle_rad - std.math.pi / 2.0) * line_length,
-                .y = entity.position.y + @sin(angle_rad - std.math.pi / 2.0) * line_length,
+                .x = entity.position.x + @cos(angle_rad) * line_length,
+                .y = entity.position.y + @sin(angle_rad) * line_length,
             };
             ctx.renderer.drawLine(entity.position, end_pos, 2, engine.types.Color.red);
         }
@@ -201,6 +242,7 @@ pub const Playing = struct {
         self.sprite_explosion_system.deinit();
         self.path_following_system.deinit();
         self.stage_manager.deinit();
+        self.drawn_paths.deinit();
     }
 
     fn handleCollision(self: *Self, collision: CollisionPair, state: *GameState, ctx: *Context) !void {
