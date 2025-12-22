@@ -18,11 +18,7 @@ pub const GameState = struct {
     starfield: z.rendering.Starfield,
     sprites: z.assets.Sprites,
     entity_manager: z.EntityManager,
-    
-    // Manually managed paths to work around engine memory leak
-    path_left: ?arcade_lib.Path,
-    path_right: ?arcade_lib.Path,
-    
+
     mode_state: union(z.modes.GameMode) {
         attract: z.modes.AttractMode,
         playing: z.modes.PlayingMode,
@@ -53,7 +49,7 @@ pub const GameState = struct {
     fn loadAssets(self: *Self, ctx: *z.Context) !void {
         try self.loadSounds(ctx);
         try self.loadFonts(ctx);
-        // NOTE: Paths are loaded manually in loadPathsManually() to avoid engine leak
+        try self.loadPaths(ctx);
     }
 
     fn loadSounds(_: *Self, ctx: *z.Context) !void {
@@ -149,14 +145,14 @@ pub const GameState = struct {
 
     pub fn shutdown(self: *Self, ctx: *z.Context) void {
         std.debug.print("[GameState] shutdown() called\n", .{});
-        
+
         // Workaround: Manually unload paths
         std.debug.print("[GameState] Manually unloading paths...\n", .{});
         ctx.assets.unloadPath(.level_1_1_left);
         std.debug.print("[GameState] Unloaded left path\n", .{});
         ctx.assets.unloadPath(.level_1_1_right);
         std.debug.print("[GameState] Unloaded right path\n", .{});
-        
+
         switch (self.mode_state) {
             inline else => |*mode| mode.deinit(ctx),
         }
