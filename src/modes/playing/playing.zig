@@ -42,7 +42,7 @@ pub const Playing = struct {
             .sprite_explosion_system = SpriteExplosionSystem.init(allocator),
             .path_following_system = PathFollowingSystem.init(allocator),
             .formation_system = FormationSystem.init(),
-            .stage_manager = StageManager.init(allocator, &level_def.stage_debug), // Use debug stage
+            .stage_manager = StageManager.init(allocator, &level_def.stage_1), // Use debug stage
             .debug_mode = DebugMode.init(),
             .player_id = null,
         };

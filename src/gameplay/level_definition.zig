@@ -49,48 +49,28 @@ pub const stage_1 = StageDefinition{
     .stage_number = 1,
     .stage_type = .normal,
     .waves = &.{
-        // Wave 1: First 4 Goei (butterflies) enter from left and right
+        // Wave 1: First wave 4 x Goei and 4 x zako enter from left and right
         .{
             .groups = &.{
-                // Left side - 2 butterflies
+                // Left side - 4 zako
                 .{
                     .enemies = &.{
-                        .{ .enemy_type = .goei, .grid_pos = .{ .row = 1, .col = 2 }, .spawn_delay = 0.0 },
-                        .{ .enemy_type = .goei, .grid_pos = .{ .row = 1, .col = 3 }, .spawn_delay = 0.4 },
+                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 4, .col = 5 }, .spawn_delay = 0.0 },
+                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 4, .col = 6 }, .spawn_delay = 0.2 },
+                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 5, .col = 5 }, .spawn_delay = 0.4 },
+                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 5, .col = 6 }, .spawn_delay = 0.6 },
                     },
                     .entry_path = .level_1_1_left,
                     .exit_path = null,
                     .group_delay = 0.0,
                 },
-                // Right side - 2 butterflies (simultaneous)
-                .{
-                    .enemies = &.{
-                        .{ .enemy_type = .goei, .grid_pos = .{ .row = 1, .col = 4 }, .spawn_delay = 0.0 },
-                        .{ .enemy_type = .goei, .grid_pos = .{ .row = 1, .col = 5 }, .spawn_delay = 0.4 },
-                    },
-                    .entry_path = .level_1_1_right,
-                    .exit_path = null,
-                    .group_delay = 0.0,
-                },
-            },
-            .wave_delay = 2.0,
-        },
-        // Wave 2: Next 4 Goei
-        .{
-            .groups = &.{
-                .{
-                    .enemies = &.{
-                        .{ .enemy_type = .goei, .grid_pos = .{ .row = 2, .col = 1 }, .spawn_delay = 0.0 },
-                        .{ .enemy_type = .goei, .grid_pos = .{ .row = 2, .col = 2 }, .spawn_delay = 0.4 },
-                    },
-                    .entry_path = .level_1_1_left,
-                    .exit_path = null,
-                    .group_delay = 0.0,
-                },
+                // Right side - 4 goei
                 .{
                     .enemies = &.{
                         .{ .enemy_type = .goei, .grid_pos = .{ .row = 2, .col = 5 }, .spawn_delay = 0.0 },
-                        .{ .enemy_type = .goei, .grid_pos = .{ .row = 2, .col = 6 }, .spawn_delay = 0.4 },
+                        .{ .enemy_type = .goei, .grid_pos = .{ .row = 2, .col = 6 }, .spawn_delay = 0.2 },
+                        .{ .enemy_type = .goei, .grid_pos = .{ .row = 3, .col = 5 }, .spawn_delay = 0.4 },
+                        .{ .enemy_type = .goei, .grid_pos = .{ .row = 3, .col = 6 }, .spawn_delay = 0.6 },
                     },
                     .entry_path = .level_1_1_right,
                     .exit_path = null,
@@ -99,26 +79,82 @@ pub const stage_1 = StageDefinition{
             },
             .wave_delay = 2.0,
         },
-        // Wave 3: Zako (bees) formation
+        // Wave 2: 4 x boss + 4 x Goei
         .{
             .groups = &.{
                 .{
                     .enemies = &.{
-                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 3, .col = 0 }, .spawn_delay = 0.0 },
-                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 3, .col = 1 }, .spawn_delay = 0.3 },
-                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 3, .col = 2 }, .spawn_delay = 0.3 },
-                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 3, .col = 3 }, .spawn_delay = 0.3 },
+                        .{ .enemy_type = .boss, .grid_pos = .{ .row = 1, .col = 5 }, .spawn_delay = 0.0 },
+                        .{ .enemy_type = .goei, .grid_pos = .{ .row = 2, .col = 4 }, .spawn_delay = 0.2 },
+                        .{ .enemy_type = .boss, .grid_pos = .{ .row = 1, .col = 6 }, .spawn_delay = 0.4 },
+                        .{ .enemy_type = .goei, .grid_pos = .{ .row = 2, .col = 7 }, .spawn_delay = 0.6 },
+                        .{ .enemy_type = .boss, .grid_pos = .{ .row = 1, .col = 4 }, .spawn_delay = 0.8 },
+                        .{ .enemy_type = .goei, .grid_pos = .{ .row = 3, .col = 4 }, .spawn_delay = 1.0 },
+                        .{ .enemy_type = .boss, .grid_pos = .{ .row = 1, .col = 7 }, .spawn_delay = 1.2 },
+                        .{ .enemy_type = .goei, .grid_pos = .{ .row = 3, .col = 7 }, .spawn_delay = 1.4 },
+                    },
+                    .entry_path = .level_1_2_left,
+                    .exit_path = null,
+                    .group_delay = 0.0,
+                },
+            },
+            .wave_delay = 2.0,
+        },
+        // Wave 3: 8 x Goei
+        .{
+            .groups = &.{
+                .{
+                    .enemies = &.{
+                        .{ .enemy_type = .goei, .grid_pos = .{ .row = 2, .col = 3 }, .spawn_delay = 0.0 },
+                        .{ .enemy_type = .goei, .grid_pos = .{ .row = 2, .col = 8 }, .spawn_delay = 0.2 },
+                        .{ .enemy_type = .goei, .grid_pos = .{ .row = 3, .col = 3 }, .spawn_delay = 0.4 },
+                        .{ .enemy_type = .goei, .grid_pos = .{ .row = 3, .col = 8 }, .spawn_delay = 0.6 },
+                        .{ .enemy_type = .goei, .grid_pos = .{ .row = 2, .col = 2 }, .spawn_delay = 0.8 },
+                        .{ .enemy_type = .goei, .grid_pos = .{ .row = 2, .col = 9 }, .spawn_delay = 1.0 },
+                        .{ .enemy_type = .goei, .grid_pos = .{ .row = 3, .col = 2 }, .spawn_delay = 1.2 },
+                        .{ .enemy_type = .goei, .grid_pos = .{ .row = 3, .col = 9 }, .spawn_delay = 1.4 },
+                    },
+                    .entry_path = .level_1_2_right,
+                    .exit_path = null,
+                    .group_delay = 0.0,
+                },
+            },
+            .wave_delay = 2.0,
+        },
+        // Wave 4: 8 x zako
+        .{
+            .groups = &.{
+                .{
+                    .enemies = &.{
+                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 4, .col = 4 }, .spawn_delay = 0.0 },
+                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 4, .col = 7 }, .spawn_delay = 0.2 },
+                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 5, .col = 4 }, .spawn_delay = 0.4 },
+                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 5, .col = 7 }, .spawn_delay = 0.6 },
+                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 4, .col = 3 }, .spawn_delay = 0.8 },
+                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 4, .col = 8 }, .spawn_delay = 1.0 },
+                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 5, .col = 3 }, .spawn_delay = 1.2 },
+                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 5, .col = 8 }, .spawn_delay = 1.4 },
                     },
                     .entry_path = .level_1_1_left,
                     .exit_path = null,
                     .group_delay = 0.0,
                 },
+            },
+            .wave_delay = 2.0,
+        },
+        // Wave 4: 8 x zako
+        .{
+            .groups = &.{
                 .{
                     .enemies = &.{
-                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 3, .col = 4 }, .spawn_delay = 0.0 },
-                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 3, .col = 5 }, .spawn_delay = 0.3 },
-                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 3, .col = 6 }, .spawn_delay = 0.3 },
-                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 3, .col = 7 }, .spawn_delay = 0.3 },
+                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 4, .col = 2 }, .spawn_delay = 0.0 },
+                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 4, .col = 9 }, .spawn_delay = 0.2 },
+                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 5, .col = 2 }, .spawn_delay = 0.4 },
+                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 5, .col = 9 }, .spawn_delay = 0.6 },
+                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 4, .col = 1 }, .spawn_delay = 0.8 },
+                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 4, .col = 10 }, .spawn_delay = 1.0 },
+                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 5, .col = 1 }, .spawn_delay = 1.2 },
+                        .{ .enemy_type = .zako, .grid_pos = .{ .row = 5, .col = 10 }, .spawn_delay = 1.4 },
                     },
                     .entry_path = .level_1_1_right,
                     .exit_path = null,
@@ -126,21 +162,6 @@ pub const stage_1 = StageDefinition{
                 },
             },
             .wave_delay = 2.0,
-        },
-        // Wave 4: Boss Galaga (top row)
-        .{
-            .groups = &.{
-                .{
-                    .enemies = &.{
-                        .{ .enemy_type = .boss, .grid_pos = .{ .row = 0, .col = 3 }, .spawn_delay = 0.0 },
-                        .{ .enemy_type = .boss, .grid_pos = .{ .row = 0, .col = 4 }, .spawn_delay = 0.5 },
-                    },
-                    .entry_path = .level_1_1_left,
-                    .exit_path = null,
-                    .group_delay = 0.0,
-                },
-            },
-            .wave_delay = 0.0, // Last wave, no delay after
         },
     },
     .can_shoot_during_entry = true,

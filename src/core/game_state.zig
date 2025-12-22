@@ -66,8 +66,10 @@ pub const GameState = struct {
     }
 
     fn loadPaths(_: *Self, ctx: *z.Context) !void {
-        _ = try ctx.assets.loadPaths(.level_1_1_left);
-        _ = try ctx.assets.loadPaths(.level_1_1_right);
+        inline for (@typeInfo(z.assets.PathAsset).@"enum".fields) |field| {
+            const path_asset = @field(z.assets.PathAsset, field.name);
+            _ = try ctx.assets.loadPaths(path_asset);
+        }
     }
 
     fn addCredit(self: *Self, ctx: *z.Context) void {
