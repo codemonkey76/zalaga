@@ -79,7 +79,7 @@ pub const Playing = struct {
         MovementSystem.update(state.entity_manager.getAll(), &self.stage_manager, dt);
 
         // Update formation breathing
-        self.formation_system.update(state.entity_manager.getAll(), dt);
+        self.formation_system.update(state.entity_manager.getAll(), &self.stage_manager, dt);
 
         // Check collisions
         try self.collision_system.checkCollisions(state.entity_manager.getAll());
