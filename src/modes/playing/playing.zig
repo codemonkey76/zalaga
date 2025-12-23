@@ -214,13 +214,37 @@ pub const Playing = struct {
             ctx.assets.playSound(.hit_boss);
         }
 
+        if (is_enemy_hit and is_player_projectile) {
+            const enemy = if (entity_a.collision_layer == .enemy) entity_a else entity_b;
+            if (enemy.health <= 0) {
+                const is_flying = enemy.behavior != .formation_idle;
+                const points: u32 = switch (enemy.type) {
+                    .boss => if (is_flying) 400 else 150,
+                    .goei => if (is_flying) 160 else 80,
+                    .zako => if (is_flying) 100 else 50,
+                    else => 0,
+                };
+                state.player_state.score += points;
+            }
+        }
+
         // Handle entity deaths
         if (entity_a.health <= 0) {
             try self.spawnExplosionFor(entity_a, state, ctx);
+            // Notify stage manager if an enemy in formation died
+            if (entity_a.collision_layer == .enemy) {
+                const was_in_formation = entity_a.behavior == .formation_idle;
+                self.stage_manager.notifyEnemyDied(was_in_formation);
+            }
             entity_a.active = false;
         }
         if (entity_b.health <= 0) {
             try self.spawnExplosionFor(entity_b, state, ctx);
+            // Notify stage manager if an enemy in formation died
+            if (entity_b.collision_layer == .enemy) {
+                const was_in_formation = entity_b.behavior == .formation_idle;
+                self.stage_manager.notifyEnemyDied(was_in_formation);
+            }
             entity_b.active = false;
         }
 
@@ -235,6 +259,7 @@ pub const Playing = struct {
                     else => 0,
                 };
                 state.player_state.score += points;
+                std.debug.print("Adding {} to score: {}\n", .{ points, state.player_state.score });
             }
         }
 

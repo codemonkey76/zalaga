@@ -26,7 +26,7 @@ pub const Hud = struct {
         // Player 1 score (top left)
         ctx.renderer.text.drawText("1UP", .{ .x = 0.05, .y = 0.02 }, 10, Color.red);
 
-        const p1_score = if (state.player1) |p1| p1.score else state.last_player1_score;
+        const p1_score = state.player_state.score;
         const p1_score_str = try formatScore(p1_score, &buf);
         ctx.renderer.text.drawText(p1_score_str, .{ .x = 0.05, .y = 0.05 }, 10, Color.white);
 

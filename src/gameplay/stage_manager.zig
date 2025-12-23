@@ -115,7 +115,7 @@ pub const StageManager = struct {
         switch (self.state) {
             .forming => try self.updateFormingState(ctx, entity_mgr, dt),
             .ready => self.updateReadyState(dt),
-            .active => self.updateActiveState(dt),
+            .active => self.updateActiveState(entity_mgr, dt),
         }
     }
 
@@ -227,18 +227,25 @@ pub const StageManager = struct {
         // Process all spawn groups in parallel
         const all_groups_complete = try self.processSpawnGroups(ctx, entity_mgr, wave, dt);
 
-        // Move to next wave when all enemies from THIS wave have spawned and reached formation
-        if (all_groups_complete and self.wave_enemies_in_formation >= self.wave_enemies_spawned) {
-            if (DEBUG_LOGGING) {
-                std.debug.print("\n[StageManager] Wave {d} complete!\n", .{self.current_wave + 1});
-                std.debug.print("  Wave enemies spawned: {d}\n", .{self.wave_enemies_spawned});
-                std.debug.print("  Wave enemies in formation: {d}\n", .{self.wave_enemies_in_formation});
-                std.debug.print("  Total spawned: {d}/{d}\n\n", .{
-                    self.enemies_spawned,
-                    self.total_enemies,
-                });
+        // Move to next wave when all enemies from THIS wave have finished spawning
+        // and all alive enemies have reached formation (or been destroyed)
+        if (all_groups_complete) {
+            const alive_enemies = countAliveEnemies(entity_mgr);
+            const all_alive_in_formation = self.enemies_in_formation >= alive_enemies;
+            
+            if (all_alive_in_formation) {
+                if (DEBUG_LOGGING) {
+                    std.debug.print("\n[StageManager] Wave {d} complete!\n", .{self.current_wave + 1});
+                    std.debug.print("  Wave enemies spawned: {d}\n", .{self.wave_enemies_spawned});
+                    std.debug.print("  Enemies alive: {d}\n", .{alive_enemies});
+                    std.debug.print("  Enemies in formation: {d}\n", .{self.enemies_in_formation});
+                    std.debug.print("  Total spawned: {d}/{d}\n\n", .{
+                        self.enemies_spawned,
+                        self.total_enemies,
+                    });
+                }
+                self.advanceToNextWave();
             }
-            self.advanceToNextWave();
         }
     }
 
@@ -333,8 +340,30 @@ pub const StageManager = struct {
     }
 
     /// Update active state - enemies can now attack
-    fn updateActiveState(_: *Self, _: f32) void {
-        // Attack logic is handled by enemy AI system
+    fn updateActiveState(self: *Self, entity_mgr: *EntityManager, _: f32) void {
+        // Check if all enemies are dead - if so, restart waves
+        const alive_enemies = countAliveEnemies(entity_mgr);
+        if (alive_enemies == 0) {
+            if (DEBUG_LOGGING) {
+                std.debug.print("\n[StageManager] All enemies destroyed!\n", .{});
+                std.debug.print("[StageManager] Restarting waves...\n\n", .{});
+            }
+            
+            // Reset to forming state and restart from first wave
+            self.state = .forming;
+            self.current_wave = 0;
+            self.wave_timer = 0;
+            self.enemies_spawned = 0;
+            self.enemies_in_formation = 0;
+            self.wave_enemies_spawned = 0;
+            self.wave_enemies_in_formation = 0;
+            
+            // Clean up any leftover group states
+            if (self.group_states.len > 0) {
+                self.allocator.free(self.group_states);
+                self.group_states = &[_]GroupState{};
+            }
+        }
     }
 
     /// Spawn a single enemy and configure its behavior
@@ -392,6 +421,27 @@ pub const StageManager = struct {
                 self.enemies_in_formation,
                 self.enemies_spawned,
             });
+        }
+    }
+
+    /// Notify that an enemy died (to update formation tracking)
+    pub fn notifyEnemyDied(self: *Self, was_in_formation: bool) void {
+        if (was_in_formation) {
+            if (self.wave_enemies_in_formation > 0) {
+                self.wave_enemies_in_formation -= 1;
+            }
+            if (self.enemies_in_formation > 0) {
+                self.enemies_in_formation -= 1;
+            }
+
+            if (DEBUG_LOGGING) {
+                std.debug.print("[StageManager] Enemy died in formation: wave={d}/{d} total={d}/{d}\n", .{
+                    self.wave_enemies_in_formation,
+                    self.wave_enemies_spawned,
+                    self.enemies_in_formation,
+                    self.enemies_spawned,
+                });
+            }
         }
     }
 
