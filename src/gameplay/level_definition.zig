@@ -188,6 +188,19 @@ pub const stage_debug = StageDefinition{
             },
             .wave_delay = 0.0,
         },
+        // .{
+        //     .groups = &.{
+        //         .{
+        //             .enemies = &.{
+        //                 .{ .enemy_type = .goei, .grid_pos = .{ .row = 1, .col = 4 }, .spawn_delay = 0.0 },
+        //             },
+        //             .entry_path = .level_1_1_right,
+        //             .exit_path = null,
+        //             .group_delay = 0.0,
+        //         },
+        //     },
+        //     .wave_delay = 2.0,
+        // },
     },
     .can_shoot_during_entry = false,
     .attack_delay = 99999.0,

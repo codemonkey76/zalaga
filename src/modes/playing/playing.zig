@@ -18,7 +18,6 @@ const FormationSystem = @import("../../systems/formation.zig").FormationSystem;
 const StageManager = @import("../../gameplay/stage_manager.zig").StageManager;
 const DebugMode = @import("../../core/debug_mode.zig").DebugMode;
 const level_def = @import("../../gameplay/level_definition.zig");
-const PathAsset = @import("../../assets/path_asset.zig").PathAsset;
 
 pub const Playing = struct {
     allocator: std.mem.Allocator,
@@ -31,7 +30,6 @@ pub const Playing = struct {
     stage_manager: StageManager,
     debug_mode: DebugMode,
     player_id: ?u32,
-    drawn_paths: std.AutoArrayHashMap(PathAsset, void),
 
     const Self = @This();
 
@@ -45,42 +43,40 @@ pub const Playing = struct {
             .sprite_explosion_system = SpriteExplosionSystem.init(allocator),
             .path_following_system = PathFollowingSystem.init(allocator),
             .formation_system = FormationSystem.init(),
-            .stage_manager = StageManager.init(allocator, &level_def.stage_debug),
-            .debug_mode = DebugMode.init(),
+            .stage_manager = StageManager.init(allocator, &level_def.stage_1),
+            .debug_mode = DebugMode.init(allocator),
             .player_id = null,
-            .drawn_paths = std.AutoArrayHashMap(PathAsset, void).init(allocator),
         };
     }
 
     pub fn update(self: *Self, ctx: *Context, dt: f32, state: *GameState) !?GameMode {
-        // Update debug mode controls
         self.debug_mode.update(ctx);
 
-        // Only update game logic if not paused or stepping one frame
         if (!self.debug_mode.shouldUpdate()) {
             return null;
         }
 
-        // Update stage manager (spawns enemies)
         try self.stage_manager.update(ctx, &state.entity_manager, dt);
 
-        // Spawn player if not present
-        if (self.player_id == null) {
-            self.player_id = try state.entity_manager.spawnPlayer(.{ .x = 0.5, .y = 0.85 });
-            state.player_state.is_active = true;
-        }
+        if (self.stage_manager.isIntroComplete()) {
+            if (self.player_id == null) {
+                self.player_id = self.stage_manager.player_id;
+            }
 
-        // Get player entity
-        if (state.entity_manager.get(self.player_id.?)) |player| {
-            // Update player controller
-            try self.player_controller.update(player, &state.entity_manager, ctx, dt);
+            // Get player entity and update
+            if (self.player_id) |player_id| {
+                if (state.entity_manager.get(player_id)) |player| {
+                    // Update player controller
+                    try self.player_controller.update(player, &state.entity_manager, ctx, dt);
+                }
+            }
         }
 
         // Update path following for enemies
         try self.path_following_system.update(state.entity_manager.getAll(), ctx, dt);
 
         // Update movement for all entities
-        MovementSystem.update(state.entity_manager.getAll(), dt);
+        MovementSystem.update(state.entity_manager.getAll(), &self.stage_manager, dt);
 
         // Update formation breathing
         self.formation_system.update(state.entity_manager.getAll(), dt);
@@ -108,130 +104,75 @@ pub const Playing = struct {
         return null;
     }
 
-    fn drawPath(self: *Self, path: arcade_lib.PathDefinition, ctx: *Context) void {
-        _ = self;
-        const segments = 300;
-        const step = 1.0 / @as(f32, @floatFromInt(segments));
-
-        var i: usize = 0;
-        while (i < segments) : (i += 1) {
-            const t1 = @as(f32, @floatFromInt(i)) * step;
-            const t2 = @as(f32, @floatFromInt(i + 1)) * step;
-
-            const pos1 = path.getPosition(t1);
-            const pos2 = path.getPosition(t2);
-
-            const p1 = engine.types.Vec2{
-                .x = pos1.x,
-                .y = pos1.y,
-            };
-
-            const p2 = engine.types.Vec2{
-                .x = pos2.x,
-                .y = pos2.y,
-            };
-
-            ctx.renderer.drawLine(p1, p2, 2, engine.types.Color.red);
-        }
-    }
-
     pub fn draw(self: *Self, ctx: *Context, state: *GameState) !void {
-        // Draw all entities
-        for (state.entity_manager.getAll()) |entity| {
-            if (!entity.active) continue;
-
-            if (entity.type == .projectile) {
-                // Draw projectiles using bullet sprites
-                if (entity.bullet_sprite_id) |bullet_id| {
-                    if (state.sprites.getBulletSprite(bullet_id)) |sprite| {
-                        ctx.renderer.drawSprite(sprite, entity.position);
-                    }
-                } else {
-                    // Fallback to circles if no sprite
-                    const color = switch (entity.collision_layer) {
-                        .player_projectile => engine.types.Color.yellow,
-                        .enemy_projectile => engine.types.Color.red,
-                        else => engine.types.Color.white,
-                    };
-                    ctx.renderer.drawFilledCircle(entity.position, 0.005, color);
-                }
-            } else if (entity.sprite_type) |sprite_type| {
-                self.drawn_paths.clearRetainingCapacity();
-
-                const path_asset = entity.current_path orelse continue;
-                if (ctx.assets.paths.get(path_asset)) |path| {
-                    if (!self.drawn_paths.contains(path_asset)) {
-                        self.drawPath(path.definition, ctx);
-                        try self.drawn_paths.put(path_asset, {});
-                    }
-                }
-
-                // Draw sprite-based entities
-                if (entity.sprite_id) |sprite_id| {
-                    if (state.sprites.getSprite(sprite_type, sprite_id)) |sprite| {
-                        // Use rotation set if entity is moving
-                        if (entity.isMoving()) {
-                            if (state.sprites.getRotationSet(sprite_type)) |rotation_set| {
-                                if (rotation_set.getSpriteForAngle(entity.angle)) |flipped| {
-                                    ctx.renderer.drawFlippedSprite(flipped, entity.position);
-                                    continue;
-                                }
-                            }
-                        }
-                        ctx.renderer.drawSprite(sprite, entity.position);
-                    }
-                }
+        if (!self.stage_manager.isIntroComplete()) {
+            switch (self.stage_manager.getIntroState()) {
+                .player_ready => {
+                    const text = "PLAYER 1";
+                    ctx.renderer.text.drawTextCentered(text, 0.5, 10, engine.types.Color.sky_blue);
+                },
+                .stage_ready => {
+                    const stage_text = "STAGE 1";
+                    ctx.renderer.text.drawTextCentered(stage_text, 0.5, 10, engine.types.Color.sky_blue);
+                },
+                .player_spawn => {
+                    // Player is spawned, draw normally but no enemies yet
+                    // Fall through to normal entity rendering
+                },
+                .complete => {
+                    // Should never reach here, but fall through to normal rendering
+                },
             }
         }
 
-        // Draw explosions
-        self.explosion_system.draw(ctx);
-        self.sprite_explosion_system.draw(ctx, state);
-
-        // Draw debug info
-        if (self.debug_mode.enabled and self.debug_mode.show_angles) {
-            self.drawDebugInfo(ctx, state);
+        // Only draw entities during player_spawn and after intro is complete
+        if (self.stage_manager.getIntroState() == .player_spawn or
+            self.stage_manager.isIntroComplete())
+        {
+            // Draw all entities
+            for (state.entity_manager.getAll()) |entity| {
+                if (!entity.active) continue;
+                if (entity.type == .projectile) {
+                    // Draw projectiles using bullet sprites
+                    if (entity.bullet_sprite_id) |bullet_id| {
+                        if (state.sprites.getBulletSprite(bullet_id)) |sprite| {
+                            ctx.renderer.drawSprite(sprite, entity.position);
+                        }
+                    } else {
+                        // Fallback to circles if no sprite
+                        const color = switch (entity.collision_layer) {
+                            .player_projectile => engine.types.Color.yellow,
+                            .enemy_projectile => engine.types.Color.red,
+                            else => engine.types.Color.white,
+                        };
+                        ctx.renderer.drawFilledCircle(entity.position, 0.005, color);
+                    }
+                } else if (entity.sprite_type) |sprite_type| {
+                    // Draw sprite-based entities
+                    if (entity.sprite_id) |sprite_id| {
+                        if (state.sprites.getSprite(sprite_type, sprite_id)) |sprite| {
+                            // Use rotation set if entity is moving
+                            if (entity.isMoving()) {
+                                if (state.sprites.getRotationSet(sprite_type)) |rotation_set| {
+                                    if (rotation_set.getSpriteForAngle(entity.angle)) |flipped| {
+                                        ctx.renderer.drawFlippedSprite(flipped, entity.position);
+                                        continue;
+                                    }
+                                }
+                            }
+                            ctx.renderer.drawSprite(sprite, entity.position);
+                        }
+                    }
+                }
+            }
+            // Draw explosions
+            self.explosion_system.draw(ctx);
+            self.sprite_explosion_system.draw(ctx, state);
         }
-    }
 
-    fn drawDebugInfo(self: *Self, ctx: *Context, state: *GameState) void {
-        _ = self;
-
-        var buffer: [256]u8 = undefined;
-        var y_offset: f32 = 0.15;
-
-        // Draw debug instructions
-        const instructions = "P=Pause\nSPACE=Step\nA=Toggle Angles";
-        ctx.renderer.text.drawText(instructions, .{ .x = 0.02, .y = y_offset }, 6, engine.types.Color.yellow);
-        y_offset += 0.03;
-
-        // Draw entity info for each enemy
-        for (state.entity_manager.getAll()) |entity| {
-            if (!entity.active) continue;
-            if (entity.type == .player or entity.type == .projectile) continue;
-
-            // Draw angle info next to entity
-            const text = std.fmt.bufPrint(&buffer, "Angle: {d:.1}\nBehavior: {s}\nPathT: {d:.2}", .{
-                entity.angle,
-                @tagName(entity.behavior),
-                entity.path_t,
-            }) catch "Error";
-
-            const text_pos = engine.types.Vec2{
-                .x = entity.position.x + 0.05,
-                .y = entity.position.y,
-            };
-            const cyan = engine.types.Color{ .r = 0, .g = 255, .b = 255, .a = 255 };
-            ctx.renderer.text.drawText(text, text_pos, 6, cyan);
-
-            // Draw direction line
-            const line_length: f32 = 0.10;
-            const angle_rad = entity.angle * std.math.pi / 180.0;
-            const end_pos = engine.types.Vec2{
-                .x = entity.position.x + @cos(angle_rad) * line_length,
-                .y = entity.position.y + @sin(angle_rad) * line_length,
-            };
-            ctx.renderer.drawLine(entity.position, end_pos, 2, engine.types.Color.red);
+        // Draw debug info (always available)
+        if (self.debug_mode.enabled and self.debug_mode.show_angles) {
+            try self.debug_mode.draw(ctx, state);
         }
     }
 
@@ -242,7 +183,7 @@ pub const Playing = struct {
         self.sprite_explosion_system.deinit();
         self.path_following_system.deinit();
         self.stage_manager.deinit();
-        self.drawn_paths.deinit();
+        self.debug_mode.deinit();
     }
 
     fn handleCollision(self: *Self, collision: CollisionPair, state: *GameState, ctx: *Context) !void {

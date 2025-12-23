@@ -20,13 +20,13 @@ pub const SpriteType = enum {
 };
 
 pub const SpriteId = enum {
-    rotation_180,
-    rotation_165,
-    rotation_150,
-    rotation_135,
-    rotation_120,
-    rotation_105,
-    rotation_90,
+    rotation_270,
+    rotation_285,
+    rotation_300,
+    rotation_315,
+    rotation_330,
+    rotation_345,
+    rotation_0,
     idle_1,
     idle_2,
 };
@@ -98,13 +98,13 @@ pub const Sprites = struct {
     ) !void {
         var builder = g.SpriteLayoutBuilder(SpriteId).init(allocator, texture);
 
-        try builder.addSprite(.rotation_180, 1 + (0 * (16 + 2)), 1 + (row * (16 + 2)), 16, 16);
-        try builder.addSprite(.rotation_165, 1 + (1 * (16 + 2)), 1 + (row * (16 + 2)), 16, 16);
-        try builder.addSprite(.rotation_150, 1 + (2 * (16 + 2)), 1 + (row * (16 + 2)), 16, 16);
-        try builder.addSprite(.rotation_135, 1 + (3 * (16 + 2)), 1 + (row * (16 + 2)), 16, 16);
-        try builder.addSprite(.rotation_120, 1 + (4 * (16 + 2)), 1 + (row * (16 + 2)), 16, 16);
-        try builder.addSprite(.rotation_105, 1 + (5 * (16 + 2)), 1 + (row * (16 + 2)), 16, 16);
-        try builder.addSprite(.rotation_90, 1 + (6 * (16 + 2)), 1 + (row * (16 + 2)), 16, 16);
+        try builder.addSprite(.rotation_270, 1 + (0 * (16 + 2)), 1 + (row * (16 + 2)), 16, 16);
+        try builder.addSprite(.rotation_285, 1 + (1 * (16 + 2)), 1 + (row * (16 + 2)), 16, 16);
+        try builder.addSprite(.rotation_300, 1 + (2 * (16 + 2)), 1 + (row * (16 + 2)), 16, 16);
+        try builder.addSprite(.rotation_315, 1 + (3 * (16 + 2)), 1 + (row * (16 + 2)), 16, 16);
+        try builder.addSprite(.rotation_330, 1 + (4 * (16 + 2)), 1 + (row * (16 + 2)), 16, 16);
+        try builder.addSprite(.rotation_345, 1 + (5 * (16 + 2)), 1 + (row * (16 + 2)), 16, 16);
+        try builder.addSprite(.rotation_0, 1 + (6 * (16 + 2)), 1 + (row * (16 + 2)), 16, 16);
 
         try builder.addSprite(.idle_1, 1 + (6 * (16 + 2)), 1 + (row * (16 + 2)), 16, 16);
         if (sprite_type == .boss or sprite_type == .boss_alt or sprite_type == .goei or sprite_type == .zako) try builder.addSprite(.idle_2, 1 + (7 * (16 + 2)), 1 + (row * (16 + 2)), 16, 16);
@@ -112,13 +112,13 @@ pub const Sprites = struct {
         const layout = builder.build();
 
         const rot_frames = try allocator.alloc(g.RotationFrame(SpriteId), 7);
-        rot_frames[0] = .{ .id = .rotation_180, .angle = 180.0 };
-        rot_frames[1] = .{ .id = .rotation_165, .angle = 165.0 };
-        rot_frames[2] = .{ .id = .rotation_150, .angle = 150.0 };
-        rot_frames[3] = .{ .id = .rotation_135, .angle = 135.0 };
-        rot_frames[4] = .{ .id = .rotation_120, .angle = 120.0 };
-        rot_frames[5] = .{ .id = .rotation_105, .angle = 105.0 };
-        rot_frames[6] = .{ .id = .rotation_90, .angle = 90.0 };
+        rot_frames[0] = .{ .id = .rotation_270, .angle = 270.0 };
+        rot_frames[1] = .{ .id = .rotation_285, .angle = 285.0 };
+        rot_frames[2] = .{ .id = .rotation_300, .angle = 300.0 };
+        rot_frames[3] = .{ .id = .rotation_315, .angle = 315.0 };
+        rot_frames[4] = .{ .id = .rotation_330, .angle = 330.0 };
+        rot_frames[5] = .{ .id = .rotation_345, .angle = 345.0 };
+        rot_frames[6] = .{ .id = .rotation_0, .angle = 0.0 };
 
         try layouts.put(sprite_type, layout);
         try rotations.put(sprite_type, g.RotationSet(SpriteId){

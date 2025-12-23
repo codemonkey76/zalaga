@@ -1,36 +1,37 @@
 const std = @import("std");
 const engine = @import("engine");
 const Entity = @import("../entities/entity.zig").Entity;
+const StageManager = @import("../gameplay/stage_manager.zig").StageManager;
 
 const DISTANCE_THRESHOLD: f32 = 0.01;
 const OFFSCREEN_MARGIN: f32 = 0.1;
 
 pub const MovementSystem = struct {
     /// Update all entities
-    pub fn update(entities: []Entity, dt: f32) void {
+    pub fn update(entities: []Entity, stage_mgr: *StageManager, dt: f32) void {
         for (entities) |*entity| {
             if (!entity.active) continue;
-            updateEntity(entity, dt);
+            updateEntity(entity, stage_mgr, dt);
         }
     }
 
-    fn updateEntity(entity: *Entity, dt: f32) void {
+    fn updateEntity(entity: *Entity, stage_mgr: *StageManager, dt: f32) void {
         // Apply velocity
         entity.position.x += entity.velocity.x * dt;
         entity.position.y += entity.velocity.y * dt;
 
         // Move toward target if set
         if (entity.target_pos) |target| {
-            updateTargetMovement(entity, target);
+            updateTargetMovement(entity, stage_mgr, target);
         }
-        
+
         // Deactivate projectiles that go offscreen
         if (entity.type == .projectile and entity.isOffscreen(OFFSCREEN_MARGIN)) {
             entity.active = false;
         }
     }
 
-    fn updateTargetMovement(entity: *Entity, target: engine.types.Vec2) void {
+    fn updateTargetMovement(entity: *Entity, stage_mgr: *StageManager, target: engine.types.Vec2) void {
         const dir = normalizeDirection(entity.position, target);
 
         if (dir.dist < DISTANCE_THRESHOLD) {
@@ -38,12 +39,14 @@ pub const MovementSystem = struct {
             entity.position = target;
             entity.target_pos = null;
             entity.velocity = .{ .x = 0, .y = 0 };
-            
+
             // If moving to formation, switch to formation_idle and reset sprite
             if (entity.behavior == .move_to_target and entity.formation_pos != null) {
                 entity.behavior = .formation_idle;
                 entity.sprite_id = .idle_1;
                 entity.angle = 0;
+
+                stage_mgr.notifyEnemyInFormation();
             }
         } else {
             // Move toward target

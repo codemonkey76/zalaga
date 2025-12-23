@@ -26,13 +26,14 @@ pub const EntityManager = struct {
     pub fn init(allocator: std.mem.Allocator) Self {
         return .{
             .allocator = allocator,
-            .entities = std.ArrayList(Entity){},
+            .entities = std.ArrayList(Entity).empty,
             .next_entity_id = 1,
         };
     }
 
     /// Spawn a player entity
     pub fn spawnPlayer(self: *Self, position: engine.types.Vec2) !EntityId {
+        std.debug.print("EntityManager: Creating PLAYER entity {d}\n", .{self.next_entity_id});
         return try self.spawn(.{
             .id = self.next_entity_id,
             .type = .player,
@@ -63,6 +64,7 @@ pub const EntityManager = struct {
         sprite_type: SpriteType,
         position: engine.types.Vec2,
     ) !EntityId {
+        std.debug.print("EntityManager: Creating entity {d} at position ({d:.3},{d:.3})\n", .{ self.next_entity_id, position.x, position.y });
         return try self.spawn(.{
             .id = self.next_entity_id,
             .type = entity_type,
@@ -81,7 +83,7 @@ pub const EntityManager = struct {
             .current_path = null,
             .formation_pos = null,
             .target_pos = null,
-            .move_speed = 0.3,
+            .move_speed = 0.9,
             .path_t = 0,
         });
     }
@@ -128,15 +130,15 @@ pub const EntityManager = struct {
         });
     }
 
-    /// Internal spawn function
     fn spawn(self: *Self, entity: Entity) !EntityId {
         const id = self.next_entity_id;
-        self.next_entity_id += 1;
+        std.debug.print("Getting entity id: {}\n", .{id});
         try self.entities.append(self.allocator, entity);
+        self.next_entity_id += 1;
+        std.debug.print("Incrementing ID to: {}\n", .{self.next_entity_id});
         return id;
     }
 
-    /// Get entity by ID
     pub fn get(self: *Self, id: EntityId) ?*Entity {
         for (self.entities.items) |*entity| {
             if (entity.id == id and entity.active) {
@@ -146,7 +148,6 @@ pub const EntityManager = struct {
         return null;
     }
 
-    /// Find entity by ID (even if inactive - for internal use)
     pub fn findById(self: *Self, id: EntityId) ?*Entity {
         for (self.entities.items) |*entity| {
             if (entity.id == id) {
@@ -156,7 +157,6 @@ pub const EntityManager = struct {
         return null;
     }
 
-    /// Find entity by reference (id or tag)
     pub fn find(self: *Self, ref: EntityRef) ?*Entity {
         return switch (ref) {
             .id => |id| self.get(id),
@@ -164,7 +164,6 @@ pub const EntityManager = struct {
         };
     }
 
-    /// Find first entity of type
     pub fn findByType(self: *Self, entity_type: EntityType) ?*Entity {
         for (self.entities.items) |*entity| {
             if (entity.type == entity_type and entity.active) {
@@ -174,30 +173,26 @@ pub const EntityManager = struct {
         return null;
     }
 
-    /// Get all entities (mutable slice)
     pub fn getAll(self: *Self) []Entity {
         return self.entities.items;
     }
 
-    /// Get all entities of a specific type
     pub fn getAllOfType(self: *Self, allocator: std.mem.Allocator, entity_type: EntityType) ![]Entity {
-        var result = std.ArrayList(Entity).init(allocator);
+        var result = std.ArrayList(Entity).empty;
         for (self.entities.items) |entity| {
             if (entity.type == entity_type and entity.active) {
-                try result.append(entity);
+                try result.append(allocator, entity);
             }
         }
         return result.toOwnedSlice();
     }
 
-    /// Deactivate an entity
     pub fn destroy(self: *Self, id: EntityId) void {
         if (self.get(id)) |entity| {
             entity.active = false;
         }
     }
 
-    /// Remove inactive entities
     pub fn compact(self: *Self) void {
         var i: usize = 0;
         while (i < self.entities.items.len) {
@@ -209,7 +204,6 @@ pub const EntityManager = struct {
         }
     }
 
-    /// Clear all entities
     pub fn clear(self: *Self) void {
         self.entities.clearRetainingCapacity();
         self.next_entity_id = 1;
