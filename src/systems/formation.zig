@@ -10,7 +10,8 @@ const BREATHE_SPEED: f32 = 0.2; // Cycles per second
 const BREATHE_AMOUNT: f32 = 0.20; // Max scale change (20%)
 const SWAY_SPEED: f32 = 0.09; // Cycles per second
 const SWAY_AMOUNT: f32 = 0.13; // Max horizontal movement (normalized coords)
-const TRANSITION_TIME: f32 = 0.35; // Time to blend between modes (seconds)
+const TRANSITION_TIME: f32 = 0.5; // Time to blend between modes (seconds)
+const IDLE_ANIM_SPEED: f32 = 2.0;
 
 /// Manages formation behavior for enemy groups
 /// - In 'sway' mode: enemies gently move side to side
@@ -37,8 +38,6 @@ pub const FormationSystem = struct {
         breathe, // Pulsing scale motion (stage active)
     };
 
-    const IDLE_ANIM_SPEED: f32 = 8.0;
-
     pub fn init() Self {
         return .{
             .sway_time = 0,
@@ -64,7 +63,7 @@ pub const FormationSystem = struct {
             // Reset the incoming mode's timer to start at neutral position
             // This prevents jarring jumps when switching modes
             if (target_mode == .breathe) {
-                self.breathe_time = 0; // sin(0) = 0 → scale = 1.0 (neutral)
+                self.breathe_time = (3.0 * std.math.pi / 2.0) / (BREATHE_SPEED * std.math.tau);
             } else {
                 self.sway_time = 0; // sin(0) = 0 → offset = 0 (centered)
             }
@@ -135,15 +134,18 @@ pub const FormationSystem = struct {
     fn applyFormationMotion(self: *Self, entities: []Entity, sway_amp: f32, breathe_amp: f32) void {
         // Formation center point (normalized coordinates)
         const center_x: f32 = 0.5;
-        const center_y: f32 = 0.29; // or whatever you set it to
+        const center_y: f32 = 0.29;
 
         // Calculate sway offset (horizontal oscillation)
         const sway_phase = self.sway_time * SWAY_SPEED * std.math.tau;
         const sway_x: f32 = std.math.sin(sway_phase) * sway_amp;
 
         // Calculate breathe scale (radial expansion/contraction)
+        // Use (sin + 1) / 2 to map from [-1, 1] to [0, 1]
+        // This makes scale go from 1.0 (original) to 1.0 + breathe_amp (expanded)
         const breathe_phase = self.breathe_time * BREATHE_SPEED * std.math.tau;
-        const scale = 1.0 + std.math.sin(breathe_phase) * breathe_amp;
+        const breathe_factor = (std.math.sin(breathe_phase) + 1.0) / 2.0; // 0 to 1
+        const scale = 1.0 + (breathe_factor * breathe_amp);
 
         const frame_index = @as(usize, @intFromFloat(self.idle_anim_time * IDLE_ANIM_SPEED)) % 2;
         const idle_frame: SpriteId = if (frame_index == 0) .idle_1 else .idle_2;

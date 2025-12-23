@@ -4,11 +4,13 @@
     .fingerprint = 0x97c594fbec6ab5bb,
     .minimum_zig_version = "0.15.2",
     .dependencies = .{
-        .engine = .{
-            .path = "../engine",
-        },
         .arcade_lib = .{
-            .path = "../arcade-lib",
+            .url = "git+https://github.com/codemonkey76/arcade-lib#3f4968a7db9bf436ef31db53201451ce344c6cc4",
+            .hash = "arcade_lib-0.0.0-1ZgfDtNdAADl4B4_dMWntIGiUNBKTIzqjUAxRyEtZKDi",
+        },
+        .engine = .{
+            .url = "git+https://github.com/codemonkey76/zig-arcade-engine#eef7d3596a6ecd473acd3eda356783eaf484108f",
+            .hash = "engine-0.0.0-Ml0uK9SUAQC-AIs0lst1MeKSccxPwvBsnuslLdsUpPIC",
         },
     },
     .paths = .{

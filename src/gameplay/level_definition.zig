@@ -77,7 +77,7 @@ pub const stage_1 = StageDefinition{
                     .group_delay = 0.0,
                 },
             },
-            .wave_delay = 2.0,
+            .wave_delay = 0.5,
         },
         // Wave 2: 4 x boss + 4 x Goei
         .{
@@ -98,7 +98,7 @@ pub const stage_1 = StageDefinition{
                     .group_delay = 0.0,
                 },
             },
-            .wave_delay = 2.0,
+            .wave_delay = 0.5,
         },
         // Wave 3: 8 x Goei
         .{
@@ -119,7 +119,7 @@ pub const stage_1 = StageDefinition{
                     .group_delay = 0.0,
                 },
             },
-            .wave_delay = 2.0,
+            .wave_delay = 0.5,
         },
         // Wave 4: 8 x zako
         .{
@@ -140,7 +140,7 @@ pub const stage_1 = StageDefinition{
                     .group_delay = 0.0,
                 },
             },
-            .wave_delay = 2.0,
+            .wave_delay = 0.5,
         },
         // Wave 4: 8 x zako
         .{
@@ -161,7 +161,7 @@ pub const stage_1 = StageDefinition{
                     .group_delay = 0.0,
                 },
             },
-            .wave_delay = 2.0,
+            .wave_delay = 0.5,
         },
     },
     .can_shoot_during_entry = true,

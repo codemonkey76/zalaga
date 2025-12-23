@@ -181,11 +181,12 @@ pub const StageManager = struct {
         // Check if all waves are complete
         if (self.current_wave >= self.stage_def.waves.len) {
             const alive_enemies = countAliveEnemies(entity_mgr);
-            // Wait for all enemies to reach formation before transitioning to ready state
+            // Wait for all ALIVE enemies to reach formation before transitioning to ready state
             if (self.enemies_in_formation >= alive_enemies) {
                 if (DEBUG_LOGGING) {
                     std.debug.print("\n[StageManager] All enemies in formation!\n", .{});
                     std.debug.print("  Enemies spawned: {d}\n", .{self.enemies_spawned});
+                    std.debug.print("  Enemies alive: {d}\n", .{alive_enemies});
                     std.debug.print("  Enemies in formation: {d}\n", .{self.enemies_in_formation});
                     std.debug.print("[StageManager] State: forming -> ready\n\n", .{});
                 }
@@ -197,7 +198,7 @@ pub const StageManager = struct {
 
         const wave = &self.stage_def.waves[self.current_wave];
 
-        // Wait for wave delay before spawning (except for first wave)
+        // Wait for wave delay before spawning
         self.wave_timer += dt;
         if (self.wave_timer < wave.wave_delay) {
             return;
@@ -226,12 +227,11 @@ pub const StageManager = struct {
         // Process all spawn groups in parallel
         const all_groups_complete = try self.processSpawnGroups(ctx, entity_mgr, wave, dt);
 
-        const alive_wave_enemies = countAliveWaveEnemies(entity_mgr, self.wave_enemies_spawned);
-        if (all_groups_complete and self.wave_enemies_in_formation >= alive_wave_enemies) {
+        // Move to next wave when all enemies from THIS wave have spawned and reached formation
+        if (all_groups_complete and self.wave_enemies_in_formation >= self.wave_enemies_spawned) {
             if (DEBUG_LOGGING) {
                 std.debug.print("\n[StageManager] Wave {d} complete!\n", .{self.current_wave + 1});
                 std.debug.print("  Wave enemies spawned: {d}\n", .{self.wave_enemies_spawned});
-                std.debug.print("  Wave enemies alive: {d}\n", .{alive_wave_enemies});
                 std.debug.print("  Wave enemies in formation: {d}\n", .{self.wave_enemies_in_formation});
                 std.debug.print("  Total spawned: {d}/{d}\n\n", .{
                     self.enemies_spawned,
