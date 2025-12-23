@@ -98,8 +98,11 @@ pub const PathFollowingSystem = struct {
     /// Handle what happens when an entity reaches the end of its path
     fn handlePathCompletion(entity: *Entity) void {
         if (entity.formation_pos) |form_pos| {
-            // Entity has a formation position - transition to moving toward it
-            entity.behavior = .move_to_target;
+            // Store the path end position for smooth transition
+            entity.formation_transition_start = entity.position;
+            entity.formation_transition_start_angle = entity.angle;
+            entity.formation_transition_t = 0;
+            entity.behavior = .formation_transition;
             entity.target_pos = form_pos;
             entity.path_t = 0;
         } else {

@@ -18,6 +18,7 @@ const FormationSystem = @import("../../systems/formation.zig").FormationSystem;
 const StageManager = @import("../../gameplay/stage_manager.zig").StageManager;
 const DebugMode = @import("../../core/debug_mode.zig").DebugMode;
 const level_def = @import("../../gameplay/level_definition.zig");
+const FormationTransitionSystem = @import("../../systems/formation_transition.zig").FormationTransitionSystem;
 
 pub const Playing = struct {
     allocator: std.mem.Allocator,
@@ -26,6 +27,7 @@ pub const Playing = struct {
     explosion_system: ExplosionSystem,
     sprite_explosion_system: SpriteExplosionSystem,
     path_following_system: PathFollowingSystem,
+    formation_transition_system: FormationTransitionSystem,
     formation_system: FormationSystem,
     stage_manager: StageManager,
     debug_mode: DebugMode,
@@ -42,6 +44,7 @@ pub const Playing = struct {
             .explosion_system = ExplosionSystem.init(allocator),
             .sprite_explosion_system = SpriteExplosionSystem.init(allocator),
             .path_following_system = PathFollowingSystem.init(allocator),
+            .formation_transition_system = FormationTransitionSystem.init(allocator),
             .formation_system = FormationSystem.init(),
             .stage_manager = StageManager.init(allocator, &level_def.stage_1),
             .debug_mode = DebugMode.init(allocator),
@@ -74,6 +77,8 @@ pub const Playing = struct {
 
         // Update path following for enemies
         try self.path_following_system.update(state.entity_manager.getAll(), ctx, dt);
+
+        self.formation_transition_system.update(state.entity_manager.getAll(), &self.stage_manager, &self.formation_system, dt);
 
         // Update movement for all entities
         MovementSystem.update(state.entity_manager.getAll(), &self.stage_manager, dt);
@@ -195,9 +200,21 @@ pub const Playing = struct {
         const is_enemy_hit = entity_a.collision_layer == .enemy or entity_b.collision_layer == .enemy;
         const is_player_projectile = entity_a.collision_layer == .player_projectile or entity_b.collision_layer == .player_projectile;
 
+        // Apply damage
         entity_a.health -= 1;
         entity_b.health -= 1;
 
+        // Handle boss damage (switch sprite when damaged but not dead)
+        if (entity_a.type == .boss and entity_a.health == 1) {
+            entity_a.sprite_type = .boss_alt;
+            ctx.assets.playSound(.hit_boss);
+        }
+        if (entity_b.type == .boss and entity_b.health == 1) {
+            entity_b.sprite_type = .boss_alt;
+            ctx.assets.playSound(.hit_boss);
+        }
+
+        // Handle entity deaths
         if (entity_a.health <= 0) {
             try self.spawnExplosionFor(entity_a, state, ctx);
             entity_a.active = false;
@@ -207,17 +224,21 @@ pub const Playing = struct {
             entity_b.active = false;
         }
 
+        // Award points for killing enemies
         if (is_enemy_hit and is_player_projectile) {
             const enemy = if (entity_a.collision_layer == .enemy) entity_a else entity_b;
-            const points: u32 = switch (enemy.type) {
-                .boss => 150,
-                .goei => 80,
-                .zako => 50,
-                else => 0,
-            };
-            state.player_state.score += points;
+            if (enemy.health <= 0) { // Only award points when enemy dies
+                const points: u32 = switch (enemy.type) {
+                    .boss => 150,
+                    .goei => 80,
+                    .zako => 50,
+                    else => 0,
+                };
+                state.player_state.score += points;
+            }
         }
 
+        // Handle player death
         if (is_player_hit) {
             if (state.player_state.lives > 0) {
                 state.player_state.lives -= 1;
@@ -227,7 +248,7 @@ pub const Playing = struct {
     }
 
     fn spawnExplosionFor(self: *Self, entity: *Entity, _: *GameState, ctx: *Context) !void {
-        // Play death sound based on entity type
+        // Play death sound based on entity type (only when actually dying)
         switch (entity.type) {
             .player => ctx.assets.playSound(.die_player),
             .boss => ctx.assets.playSound(.die_boss),

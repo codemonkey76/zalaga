@@ -54,6 +54,8 @@ pub const EntityManager = struct {
             .target_pos = null,
             .move_speed = 0,
             .path_t = 0,
+            .formation_transition_start = null,
+            .formation_transition_t = 0,
         });
     }
 
@@ -65,6 +67,7 @@ pub const EntityManager = struct {
         position: engine.types.Vec2,
     ) !EntityId {
         std.debug.print("EntityManager: Creating entity {d} at position ({d:.3},{d:.3})\n", .{ self.next_entity_id, position.x, position.y });
+        const health: i32 = if (entity_type == .boss) 2 else 1;
         return try self.spawn(.{
             .id = self.next_entity_id,
             .type = entity_type,
@@ -78,13 +81,15 @@ pub const EntityManager = struct {
             .collision_radius = 8.0,
             .collision_layer = .enemy,
             .collision_enabled = true,
-            .health = 1,
+            .health = health,
             .behavior = .idle,
             .current_path = null,
             .formation_pos = null,
             .target_pos = null,
             .move_speed = 0.9,
             .path_t = 0,
+            .formation_transition_start = null,
+            .formation_transition_t = 0,
         });
     }
 
@@ -127,6 +132,8 @@ pub const EntityManager = struct {
             .target_pos = null,
             .move_speed = 0,
             .path_t = 0,
+            .formation_transition_start = null,
+            .formation_transition_t = 0,
         });
     }
 

@@ -11,6 +11,8 @@ pub const MovementSystem = struct {
     pub fn update(entities: []Entity, stage_mgr: *StageManager, dt: f32) void {
         for (entities) |*entity| {
             if (!entity.active) continue;
+
+            if (entity.behavior == .formation_transition) continue;
             updateEntity(entity, stage_mgr, dt);
         }
     }

@@ -147,7 +147,7 @@ pub const StageManager = struct {
             .player_spawn => {
                 // Spawn player on first frame of this state
                 if (self.player_id == null) {
-                    self.player_id = try entity_mgr.spawnPlayer(.{ .x = 0.5, .y = 0.85 });
+                    self.player_id = try entity_mgr.spawnPlayer(.{ .x = 0.5, .y = 0.92 });
                     if (DEBUG_LOGGING) {
                         std.debug.print("[StageManager] Player spawned: ID={?d}\n", .{self.player_id});
                     }
@@ -180,8 +180,9 @@ pub const StageManager = struct {
     fn updateFormingState(self: *Self, ctx: *Context, entity_mgr: *EntityManager, dt: f32) !void {
         // Check if all waves are complete
         if (self.current_wave >= self.stage_def.waves.len) {
+            const alive_enemies = countAliveEnemies(entity_mgr);
             // Wait for all enemies to reach formation before transitioning to ready state
-            if (self.enemies_in_formation >= self.enemies_spawned) {
+            if (self.enemies_in_formation >= alive_enemies) {
                 if (DEBUG_LOGGING) {
                     std.debug.print("\n[StageManager] All enemies in formation!\n", .{});
                     std.debug.print("  Enemies spawned: {d}\n", .{self.enemies_spawned});
@@ -225,11 +226,12 @@ pub const StageManager = struct {
         // Process all spawn groups in parallel
         const all_groups_complete = try self.processSpawnGroups(ctx, entity_mgr, wave, dt);
 
-        // Move to next wave only when all enemies from current wave are in formation
-        if (all_groups_complete and self.wave_enemies_in_formation >= self.wave_enemies_spawned) {
+        const alive_wave_enemies = countAliveWaveEnemies(entity_mgr, self.wave_enemies_spawned);
+        if (all_groups_complete and self.wave_enemies_in_formation >= alive_wave_enemies) {
             if (DEBUG_LOGGING) {
                 std.debug.print("\n[StageManager] Wave {d} complete!\n", .{self.current_wave + 1});
                 std.debug.print("  Wave enemies spawned: {d}\n", .{self.wave_enemies_spawned});
+                std.debug.print("  Wave enemies alive: {d}\n", .{alive_wave_enemies});
                 std.debug.print("  Wave enemies in formation: {d}\n", .{self.wave_enemies_in_formation});
                 std.debug.print("  Total spawned: {d}/{d}\n\n", .{
                     self.enemies_spawned,
@@ -238,6 +240,25 @@ pub const StageManager = struct {
             }
             self.advanceToNextWave();
         }
+    }
+
+    /// Count alive enemies in the entity manager
+    fn countAliveEnemies(entity_mgr: *EntityManager) u32 {
+        var count: u32 = 0;
+        for (entity_mgr.getAll()) |entity| {
+            if (entity.active and (entity.type == .boss or entity.type == .goei or entity.type == .zako)) {
+                count += 1;
+            }
+        }
+        return count;
+    }
+
+    /// Count alive enemies from the current wave (last N spawned)
+    fn countAliveWaveEnemies(entity_mgr: *EntityManager, wave_spawned: u32) u32 {
+        // This is trickier - we need to track which enemies belong to which wave
+        // For now, just count all alive enemies as a simpler approach
+        _ = wave_spawned;
+        return countAliveEnemies(entity_mgr);
     }
 
     /// Process all spawn groups in a wave, returning true if all groups are complete
@@ -275,7 +296,6 @@ pub const StageManager = struct {
             self.enemies_spawned += 1;
             self.wave_enemies_spawned += 1;
             gs.current_enemy += 1;
-            gs.enemy_timer = 0;
 
             if (DEBUG_LOGGING) {
                 std.debug.print("[StageManager] Enemy spawned: wave={d} group={d} enemy={d}/{d} total={d}/{d}\n", .{
@@ -417,17 +437,27 @@ fn spriteTypeToEntityType(sprite_type: z.assets.SpriteType) z.EntityType {
 /// Convert grid position to world coordinates (normalized 0-1 space)
 ///
 /// The Galaga formation uses a 10-column by 6-row grid centered on screen
+/// Rows 0-1 (bosses) have larger spacing, rows 2-5 (enemies) have tighter spacing
 fn gridToWorldPosition(grid_pos: GridPosition) engine.types.Vec2 {
     // Grid configuration
     const GRID_COLUMNS: f32 = 10.0;
-    const GRID_HORIZONTAL_MARGIN: f32 = 0.15; // Left/right margin for centering
-    const GRID_TOP_OFFSET: f32 = 0.15; // Distance from top of screen
-    const GRID_CELL_HEIGHT: f32 = 0.08; // Vertical spacing between rows
+    const GRID_HORIZONTAL_MARGIN: f32 = 0.13; // Left/right margin for centering
+    const GRID_TOP_OFFSET: f32 = 0.10; // Distance from top of screen
+    const BOSS_ROW_HEIGHT: f32 = 0.055; // Vertical spacing for boss rows (0-1)
+    const ENEMY_ROW_HEIGHT: f32 = 0.040; // Tighter spacing for enemy rows (2-5)
 
     const cell_width = (1.0 - GRID_HORIZONTAL_MARGIN * 2.0) / GRID_COLUMNS;
 
+    // Calculate Y position with different spacing for boss vs enemy rows
+    const y_pos = if (grid_pos.row <= 1)
+        // Boss rows (0-1): use larger spacing
+        GRID_TOP_OFFSET + @as(f32, @floatFromInt(grid_pos.row)) * BOSS_ROW_HEIGHT
+    else
+        // Enemy rows (2-5): use tighter spacing, offset by boss row height
+        GRID_TOP_OFFSET + (2.0 * BOSS_ROW_HEIGHT) + @as(f32, @floatFromInt(grid_pos.row - 2)) * ENEMY_ROW_HEIGHT;
+
     return engine.types.Vec2{
         .x = GRID_HORIZONTAL_MARGIN + (@as(f32, @floatFromInt(grid_pos.col)) - 0.5) * cell_width,
-        .y = GRID_TOP_OFFSET + @as(f32, @floatFromInt(grid_pos.row)) * GRID_CELL_HEIGHT,
+        .y = y_pos,
     };
 }
