@@ -1,5 +1,6 @@
 const std = @import("std");
 const engine = @import("engine");
+const z = @import("../../mod.zig");
 const Context = @import("../../mod.zig").Context;
 const actions = @import("demo_actions.zig");
 const EntityManager = @import("../../entities/entity_manager.zig").EntityManager;
@@ -26,15 +27,17 @@ const TextState = struct {
 pub const ActionExecutor = struct {
     entities: EntityManager,
     allocator: std.mem.Allocator,
+    ctx: *z.Context,
     active_movements: std.ArrayList(MovementState),
     active_texts: std.ArrayList(TextState),
 
     const Self = @This();
 
-    pub fn init(allocator: std.mem.Allocator) Self {
+    pub fn init(allocator: std.mem.Allocator, ctx: *z.Context) Self {
         return .{
-            .entities = EntityManager.init(allocator),
+            .entities = EntityManager.init(allocator, ctx),
             .allocator = allocator,
+            .ctx = ctx,
             .active_movements = std.ArrayList(MovementState){},
             .active_texts = std.ArrayList(TextState){},
         };

@@ -1,6 +1,6 @@
 const std = @import("std");
 const engine = @import("engine");
-
+const z = @import("../mod.zig");
 const Entity = @import("entity.zig").Entity;
 const EntityId = @import("entity.zig").EntityId;
 const SpriteType = @import("../assets/sprites.zig").SpriteType;
@@ -18,14 +18,16 @@ pub const EntityRef = union(enum) {
 
 pub const EntityManager = struct {
     allocator: std.mem.Allocator,
+    ctx: *z.Context,
     entities: std.ArrayList(Entity),
     next_entity_id: EntityId,
 
     const Self = @This();
 
-    pub fn init(allocator: std.mem.Allocator) Self {
+    pub fn init(allocator: std.mem.Allocator, ctx: *z.Context) Self {
         return .{
             .allocator = allocator,
+            .ctx = ctx,
             .entities = std.ArrayList(Entity).empty,
             .next_entity_id = 1,
         };
@@ -33,7 +35,7 @@ pub const EntityManager = struct {
 
     /// Spawn a player entity
     pub fn spawnPlayer(self: *Self, position: engine.types.Vec2) !EntityId {
-        std.debug.print("EntityManager: Creating PLAYER entity {d}\n", .{self.next_entity_id});
+        self.ctx.logger.info("[EntityManager] Creating PLAYER entity {d}", .{self.next_entity_id});
         return try self.spawn(.{
             .id = self.next_entity_id,
             .type = .player,
@@ -66,7 +68,10 @@ pub const EntityManager = struct {
         sprite_type: SpriteType,
         position: engine.types.Vec2,
     ) !EntityId {
-        std.debug.print("EntityManager: Creating entity {d} at position ({d:.3},{d:.3})\n", .{ self.next_entity_id, position.x, position.y });
+        self.ctx.logger.info(
+            "[EntityManager] Creating entity {d} at position ({d:.3},{d:.3})",
+            .{ self.next_entity_id, position.x, position.y },
+        );
         const health: i32 = if (entity_type == .boss) 2 else 1;
         return try self.spawn(.{
             .id = self.next_entity_id,
@@ -139,10 +144,16 @@ pub const EntityManager = struct {
 
     fn spawn(self: *Self, entity: Entity) !EntityId {
         const id = self.next_entity_id;
-        std.debug.print("Getting entity id: {}\n", .{id});
+        self.ctx.logger.info(
+            "[EntityManager] Getting entity id: {}",
+            .{id},
+        );
         try self.entities.append(self.allocator, entity);
         self.next_entity_id += 1;
-        std.debug.print("Incrementing ID to: {}\n", .{self.next_entity_id});
+        self.ctx.logger.info(
+            "[EntityManager] Incrementing ID to {}",
+            .{self.next_entity_id},
+        );
         return id;
     }
 

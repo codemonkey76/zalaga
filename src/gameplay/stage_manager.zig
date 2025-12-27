@@ -72,7 +72,7 @@ pub const StageManager = struct {
     const INTRO_PLAYER_SPAWN_DURATION: f32 = 2.0;
 
     // Debug logging flag
-    const DEBUG_LOGGING = true;
+    const DEBUG_LOGGING = false;
 
     pub fn init(allocator: std.mem.Allocator, stage_def: *const StageDefinition) Self {
         const total = countTotalEnemies(stage_def);
@@ -232,7 +232,7 @@ pub const StageManager = struct {
         if (all_groups_complete) {
             const alive_enemies = countAliveEnemies(entity_mgr);
             const all_alive_in_formation = self.enemies_in_formation >= alive_enemies;
-            
+
             if (all_alive_in_formation) {
                 if (DEBUG_LOGGING) {
                     std.debug.print("\n[StageManager] Wave {d} complete!\n", .{self.current_wave + 1});
@@ -348,7 +348,7 @@ pub const StageManager = struct {
                 std.debug.print("\n[StageManager] All enemies destroyed!\n", .{});
                 std.debug.print("[StageManager] Restarting waves...\n\n", .{});
             }
-            
+
             // Reset to forming state and restart from first wave
             self.state = .forming;
             self.current_wave = 0;
@@ -357,7 +357,7 @@ pub const StageManager = struct {
             self.enemies_in_formation = 0;
             self.wave_enemies_spawned = 0;
             self.wave_enemies_in_formation = 0;
-            
+
             // Clean up any leftover group states
             if (self.group_states.len > 0) {
                 self.allocator.free(self.group_states);

@@ -33,10 +33,8 @@ pub const Attract = struct {
     };
 
     pub fn init(allocator: std.mem.Allocator, ctx: *Context) !Self {
-        _ = ctx;
-
         const script = try createInfoScript(allocator);
-        const executor = ActionExecutor.init(allocator);
+        const executor = ActionExecutor.init(allocator, ctx);
         const timeline = try DemoTimeline.init(allocator, script, executor, .{ .loop = true });
 
         return .{

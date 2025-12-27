@@ -43,8 +43,14 @@ pub const Hud = struct {
         ctx.renderer.text.drawTextRightAligned(p2_score_str, .{ .x = 0.95, .y = 0.05 }, 10, Color.white);
 
         // Credits (bottom left)
-        const credit_str = try std.fmt.bufPrint(&buf, "CREDIT {d}", .{state.credits});
-        ctx.renderer.text.drawText(credit_str, .{ .x = 0.05, .y = 0.95 }, 10, Color.white);
+
+        switch (state.mode_state) {
+            .playing => {},
+            else => {
+                const credit_str = try std.fmt.bufPrint(&buf, "CREDIT {d}", .{state.credits});
+                ctx.renderer.text.drawText(credit_str, .{ .x = 0.05, .y = 0.95 }, 10, Color.white);
+            },
+        }
     }
 
     pub fn update(self: *Self, ctx: *Context, dt: f32) !void {

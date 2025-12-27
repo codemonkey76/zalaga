@@ -32,11 +32,11 @@ pub const Playing = struct {
     stage_manager: StageManager,
     debug_mode: DebugMode,
     player_id: ?u32,
+    ctx: *Context,
 
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator, ctx: *Context) !Self {
-        _ = ctx;
         return .{
             .allocator = allocator,
             .collision_system = CollisionSystem.init(allocator),
@@ -49,6 +49,7 @@ pub const Playing = struct {
             .stage_manager = StageManager.init(allocator, &level_def.stage_1),
             .debug_mode = DebugMode.init(allocator),
             .player_id = null,
+            .ctx = ctx,
         };
     }
 
@@ -259,7 +260,7 @@ pub const Playing = struct {
                     else => 0,
                 };
                 state.player_state.score += points;
-                std.debug.print("Adding {} to score: {}\n", .{ points, state.player_state.score });
+                self.ctx.logger.info("[PlayingMode] Adding {} to score {}", .{ points, state.player_state.score });
             }
         }
 

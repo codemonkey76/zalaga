@@ -43,7 +43,8 @@ pub const Game = struct {
                 .virtual_height = 282,
                 .ssaa_scale = 3,
                 .target_fps = 155,
-                .log_level = .warning,
+                .log_level = .info,
+                .log_file = "zalaga.log",
                 .asset_root = "assets",
             },
         );

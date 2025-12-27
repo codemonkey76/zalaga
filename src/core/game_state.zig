@@ -35,7 +35,7 @@ pub const GameState = struct {
         self.hud = z.rendering.Hud.init(allocator);
         self.starfield = try z.rendering.Starfield.init(allocator, ctx, .{ .parallax_strength = 400.0 });
         self.allocator = allocator;
-        self.entity_manager = z.EntityManager.init(allocator);
+        self.entity_manager = z.EntityManager.init(allocator, ctx);
         self.player_state = z.PlayerState{};
         self.player1 = null;
         self.player2 = null;
@@ -146,14 +146,7 @@ pub const GameState = struct {
     }
 
     pub fn shutdown(self: *Self, ctx: *z.Context) void {
-        std.debug.print("[GameState] shutdown() called\n", .{});
-
-        // Workaround: Manually unload paths
-        std.debug.print("[GameState] Manually unloading paths...\n", .{});
-        ctx.assets.unloadPath(.level_1_1_left);
-        std.debug.print("[GameState] Unloaded left path\n", .{});
-        ctx.assets.unloadPath(.level_1_1_right);
-        std.debug.print("[GameState] Unloaded right path\n", .{});
+        ctx.logger.info("[GameState] shutdown() called", .{});
 
         switch (self.mode_state) {
             inline else => |*mode| mode.deinit(ctx),
@@ -161,6 +154,6 @@ pub const GameState = struct {
         self.entity_manager.deinit();
         self.sprites.deinit();
         self.starfield.deinit();
-        std.debug.print("[GameState] shutdown() complete\n", .{});
+        ctx.logger.info("[GameState] shutdown() complete", .{});
     }
 };
