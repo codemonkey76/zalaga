@@ -1,10 +1,8 @@
 const std = @import("std");
 const engine = @import("engine");
 const Entity = @import("../entities/entity.zig").Entity;
-const StageManager = @import("../gameplay/stage_manager.zig").StageManager;
-
-const DISTANCE_THRESHOLD: f32 = 0.01;
-const OFFSCREEN_MARGIN: f32 = 0.1;
+const StageManager = @import("../gameplay/stage/stage_manager.zig").StageManager;
+const c = @import("../constants.zig");
 
 pub const MovementSystem = struct {
     /// Update all entities
@@ -28,7 +26,7 @@ pub const MovementSystem = struct {
         }
 
         // Deactivate projectiles that go offscreen
-        if (entity.type == .projectile and entity.isOffscreen(OFFSCREEN_MARGIN)) {
+        if (entity.type == .projectile and entity.isOffscreen(c.movement.OFFSCREEN_MARGIN)) {
             entity.active = false;
         }
     }
@@ -36,7 +34,7 @@ pub const MovementSystem = struct {
     fn updateTargetMovement(entity: *Entity, stage_mgr: *StageManager, target: engine.types.Vec2) void {
         const dir = normalizeDirection(entity.position, target);
 
-        if (dir.dist < DISTANCE_THRESHOLD) {
+        if (dir.dist < c.movement.DISTANCE_THRESHOLD) {
             // Reached target
             entity.position = target;
             entity.target_pos = null;

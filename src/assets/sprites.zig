@@ -48,6 +48,15 @@ pub const ExplosionSpriteId = enum {
     enemy_frame_5,
 };
 
+pub const LevelSpriteId = enum {
+    level_1,
+    level_5,
+    level_10,
+    level_20,
+    level_30,
+    level_50,
+};
+
 pub const Sprites = struct {
     allocator: std.mem.Allocator,
 
@@ -55,6 +64,7 @@ pub const Sprites = struct {
     rotations: std.AutoHashMap(SpriteType, g.RotationSet(SpriteId)),
     bullet_layout: g.SpriteLayout(BulletSpriteId),
     explosion_layout: g.SpriteLayout(ExplosionSpriteId),
+    level_marker_layout: g.SpriteLayout(LevelSpriteId),
 
     const Self = @This();
 
@@ -78,6 +88,7 @@ pub const Sprites = struct {
 
         const bullet_layout = try initBullets(allocator, sprite_sheet);
         const explosion_layout = try initExplosions(allocator, sprite_sheet);
+        const level_layout = try initLevelMarkers(allocator, sprite_sheet);
 
         return .{
             .allocator = allocator,
@@ -85,6 +96,7 @@ pub const Sprites = struct {
             .rotations = rotations,
             .bullet_layout = bullet_layout,
             .explosion_layout = explosion_layout,
+            .level_marker_layout = level_layout,
         };
     }
 
@@ -158,6 +170,19 @@ pub const Sprites = struct {
         return builder.build();
     }
 
+    fn initLevelMarkers(allocator: std.mem.Allocator, texture: g.Texture) !g.SpriteLayout(LevelSpriteId) {
+        var builder = g.SpriteLayoutBuilder(LevelSpriteId).init(allocator, texture);
+
+        try builder.addSprite(.level_1, 307, 172, 8, 16);
+        try builder.addSprite(.level_5, 317, 172, 8, 16);
+        try builder.addSprite(.level_10, 327, 172, 16, 16);
+        try builder.addSprite(.level_20, 345, 172, 16, 16);
+        try builder.addSprite(.level_30, 363, 172, 16, 16);
+        try builder.addSprite(.level_50, 381, 172, 16, 16);
+
+        return builder.build();
+    }
+
     pub fn deinit(self: *Self) void {
         var rot_iter = self.rotations.valueIterator();
         while (rot_iter.next()) |rotation_set| {
@@ -168,7 +193,7 @@ pub const Sprites = struct {
     }
 
     /// Get a sprite by type and ID
-    pub fn getSprite(self: *Self, sprite_type: SpriteType, sprite_id: SpriteId) ?engine.graphics.Sprite {
+    pub fn getSprite(self: *const Self, sprite_type: SpriteType, sprite_id: SpriteId) ?engine.graphics.Sprite {
         const layout = self.layouts.get(sprite_type) orelse return null;
         return layout.getSprite(sprite_id);
     }

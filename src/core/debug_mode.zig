@@ -31,7 +31,7 @@ pub const DebugMode = struct {
         self.drawn_paths.deinit();
     }
 
-    pub fn update(self: *Self, ctx: anytype) void {
+    pub fn update(self: *Self, ctx: anytype, _: *z.GameState) void {
         if (ctx.input.isKeyPressed(.f3)) {
             self.enabled = !self.enabled;
         }

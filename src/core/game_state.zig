@@ -3,12 +3,23 @@ const engine = @import("engine");
 const z = @import("../mod.zig");
 const arcade_lib = @import("arcade_lib");
 
+const PlayerIndex = enum {
+    player1,
+    player2,
+
+    pub fn other(self: PlayerIndex) PlayerIndex {
+        return switch (self) {
+            .player1 => .player2,
+            .player2 => .player1,
+        };
+    }
+};
+
 pub const GameState = struct {
     player1: ?z.PlayerState,
     player2: ?z.PlayerState,
-    player_state: z.PlayerState,
+    active_player: PlayerIndex = .player1,
     hud: z.rendering.Hud,
-    active_player: u8,
     last_player1_score: u32,
     last_player2_score: u32,
     credits: u32,
@@ -36,20 +47,60 @@ pub const GameState = struct {
         self.starfield = try z.rendering.Starfield.init(allocator, ctx, .{ .parallax_strength = 400.0 });
         self.allocator = allocator;
         self.entity_manager = z.EntityManager.init(allocator, ctx);
-        self.player_state = z.PlayerState{};
         self.player1 = null;
         self.player2 = null;
-        self.active_player = 1;
+        self.active_player = .player1;
         self.last_player1_score = 0;
         self.last_player2_score = 0;
         self.high_score = 20000;
         self.credits = 0;
         self.mode_state = .{ .attract = try z.modes.AttractMode.init(allocator, ctx) };
     }
+
     fn loadAssets(self: *Self, ctx: *z.Context) !void {
         try self.loadSounds(ctx);
         try self.loadFonts(ctx);
         try self.loadPaths(ctx);
+    }
+
+    pub fn getActivePlayer(self: *const Self) ?*const z.PlayerState {
+        const player = switch (self.active_player) {
+            .player1 => self.player1,
+            .player2 => self.player2,
+        };
+
+        return if (player) |*p| p else null;
+    }
+
+    pub fn getInactivePlayer(self: *const Self) ?*const z.PlayerState {
+        const player = switch (self.active_player.other()) {
+            .player1 => self.player1,
+            .player2 => self.player2,
+        };
+
+        return if (player) |*p| p else null;
+    }
+
+    pub fn getActivePlayerMut(self: *Self) ?*z.PlayerState {
+        var player = switch (self.active_player) {
+            .player1 => self.player1,
+            .player2 => self.player2,
+        };
+
+        return if (player) |*p| p else null;
+    }
+
+    pub fn getInactivePlayerMut(self: *Self) ?*z.PlayerState {
+        var player = switch (self.active_player.other()) {
+            .player1 => self.player1,
+            .player2 => self.player2,
+        };
+
+        return if (player) |*p| p else null;
+    }
+
+    pub fn switchPlayer(self: *Self) void {
+        self.active_player = self.ative_player.other();
     }
 
     fn loadSounds(_: *Self, ctx: *z.Context) !void {
@@ -92,9 +143,11 @@ pub const GameState = struct {
         // Get player x position for starfield parallax
         var player_x: f32 = 0.5; // Default to center
         if (self.mode_state == .playing) {
-            if (self.mode_state.playing.player_id) |player_id| {
-                if (self.entity_manager.get(player_id)) |player| {
-                    player_x = player.position.x;
+            if (self.getActivePlayer()) |player| {
+                if (player.entity_id) |entity_id| {
+                    if (self.entity_manager.get(entity_id)) |player_entity| {
+                        player_x = player_entity.position.x;
+                    }
                 }
             }
         }
@@ -132,7 +185,7 @@ pub const GameState = struct {
             .attract => .{ .attract = try z.modes.AttractMode.init(self.allocator, ctx) },
             .playing => .{ .playing = try z.modes.PlayingMode.init(self.allocator, ctx) },
             .high_score => .{ .high_score = try z.modes.HighScoreMode.init(self.allocator, ctx) },
-            .start_screen => .{ .start_screen = try z.modes.StartScreenMode.init(self.allocator, ctx) },
+            .start_screen => .{ .start_screen = z.modes.StartScreenMode.init(self.allocator) },
         };
     }
 

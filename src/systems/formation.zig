@@ -3,15 +3,8 @@ const engine = @import("engine");
 const Entity = @import("../entities/entity.zig").Entity;
 const EntityType = @import("../entities/entity.zig").EntityType;
 const SpriteId = @import("../assets/sprites.zig").SpriteId;
-const StageManager = @import("../gameplay/stage_manager.zig").StageManager;
-
-// Animation parameters
-const BREATHE_SPEED: f32 = 0.2; // Cycles per second
-const BREATHE_AMOUNT: f32 = 0.20; // Max scale change (20%)
-const SWAY_SPEED: f32 = 0.09; // Cycles per second
-const SWAY_AMOUNT: f32 = 0.13; // Max horizontal movement (normalized coords)
-const TRANSITION_TIME: f32 = 0.5; // Time to blend between modes (seconds)
-const IDLE_ANIM_SPEED: f32 = 2.0;
+const StageManager = @import("../gameplay/stage/stage_manager.zig").StageManager;
+const c = @import("../constants.zig");
 
 /// Manages formation behavior for enemy groups
 /// - In 'sway' mode: enemies gently move side to side
@@ -43,7 +36,7 @@ pub const FormationSystem = struct {
             .sway_time = 0,
             .breathe_time = 0,
             .mode = .sway,
-            .transition = TRANSITION_TIME, // Start fully settled in sway mode
+            .transition = c.formation.TRANSITION_TIME, // Start fully settled in sway mode
             .idle_anim_time = 0,
         };
     }
@@ -53,7 +46,7 @@ pub const FormationSystem = struct {
         self.idle_anim_time += dt;
 
         // Check if we need to switch modes based on stage state
-        const target_mode: Mode = if (stage_mgr.state == .active) .breathe else .sway;
+        const target_mode: Mode = if (stage_mgr.canEnemiesAttack()) .breathe else .sway;
 
         if (target_mode != self.mode) {
             // Start transition to new mode
@@ -63,7 +56,7 @@ pub const FormationSystem = struct {
             // Reset the incoming mode's timer to start at neutral position
             // This prevents jarring jumps when switching modes
             if (target_mode == .breathe) {
-                self.breathe_time = (3.0 * std.math.pi / 2.0) / (BREATHE_SPEED * std.math.tau);
+                self.breathe_time = (3.0 * std.math.pi / 2.0) / (c.formation.BREATHE_SPEED * std.math.tau);
             } else {
                 self.sway_time = 0; // sin(0) = 0 → offset = 0 (centered)
             }
@@ -73,21 +66,21 @@ pub const FormationSystem = struct {
         self.transition += dt;
 
         // Calculate blend factor (0 to 1) with smoothstep easing
-        var blend = @min(self.transition / TRANSITION_TIME, 1.0);
+        var blend = @min(self.transition / c.formation.TRANSITION_TIME, 1.0);
         blend = blend * blend * (3.0 - 2.0 * blend); // Smoothstep formula
 
         // Calculate amplitude for each animation based on mode and blend
         // - Active mode fades IN (0 → full amplitude)
         // - Inactive mode fades OUT (full amplitude → 0)
         const sway_amp: f32 = if (self.mode == .sway)
-            SWAY_AMOUNT * blend
+            c.formation.SWAY_AMOUNT * blend
         else
-            SWAY_AMOUNT * (1.0 - blend);
+            c.formation.SWAY_AMOUNT * (1.0 - blend);
 
         const breathe_amp: f32 = if (self.mode == .breathe)
-            BREATHE_AMOUNT * blend
+            c.formation.BREATHE_AMOUNT * blend
         else
-            BREATHE_AMOUNT * (1.0 - blend);
+            c.formation.BREATHE_AMOUNT * (1.0 - blend);
 
         // Keep both timers running so they're ready when needed
         self.sway_time += dt;
@@ -103,21 +96,21 @@ pub const FormationSystem = struct {
         const center_y: f32 = 0.29;
 
         // Calculate current sway and breathe
-        const sway_phase = self.sway_time * SWAY_SPEED * std.math.tau;
-        const breathe_phase = self.breathe_time * BREATHE_SPEED * std.math.tau;
+        const sway_phase = self.sway_time * c.formation.SWAY_SPEED * std.math.tau;
+        const breathe_phase = self.breathe_time * c.formation.BREATHE_SPEED * std.math.tau;
 
-        var blend = @min(self.transition / TRANSITION_TIME, 1.0);
+        var blend = @min(self.transition / c.formation.TRANSITION_TIME, 1.0);
         blend = blend * blend * (3.0 - 2.0 * blend);
 
         const sway_amp: f32 = if (self.mode == .sway)
-            SWAY_AMOUNT * blend
+            c.formation.SWAY_AMOUNT * blend
         else
-            SWAY_AMOUNT * (1.0 - blend);
+            c.formation.SWAY_AMOUNT * (1.0 - blend);
 
         const breathe_amp: f32 = if (self.mode == .breathe)
-            BREATHE_AMOUNT * blend
+            c.formation.BREATHE_AMOUNT * blend
         else
-            BREATHE_AMOUNT * (1.0 - blend);
+            c.formation.BREATHE_AMOUNT * (1.0 - blend);
 
         const sway_x: f32 = std.math.sin(sway_phase) * sway_amp;
         const scale = 1.0 + std.math.sin(breathe_phase) * breathe_amp;
@@ -137,17 +130,17 @@ pub const FormationSystem = struct {
         const center_y: f32 = 0.29;
 
         // Calculate sway offset (horizontal oscillation)
-        const sway_phase = self.sway_time * SWAY_SPEED * std.math.tau;
+        const sway_phase = self.sway_time * c.formation.SWAY_SPEED * std.math.tau;
         const sway_x: f32 = std.math.sin(sway_phase) * sway_amp;
 
         // Calculate breathe scale (radial expansion/contraction)
         // Use (sin + 1) / 2 to map from [-1, 1] to [0, 1]
         // This makes scale go from 1.0 (original) to 1.0 + breathe_amp (expanded)
-        const breathe_phase = self.breathe_time * BREATHE_SPEED * std.math.tau;
+        const breathe_phase = self.breathe_time * c.formation.BREATHE_SPEED * std.math.tau;
         const breathe_factor = (std.math.sin(breathe_phase) + 1.0) / 2.0; // 0 to 1
         const scale = 1.0 + (breathe_factor * breathe_amp);
 
-        const frame_index = @as(usize, @intFromFloat(self.idle_anim_time * IDLE_ANIM_SPEED)) % 2;
+        const frame_index = @as(usize, @intFromFloat(self.idle_anim_time * c.formation.IDLE_ANIM_SPEED)) % 2;
         const idle_frame: SpriteId = if (frame_index == 0) .idle_1 else .idle_2;
 
         for (entities) |*entity| {

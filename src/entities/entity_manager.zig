@@ -46,7 +46,7 @@ pub const EntityManager = struct {
             .sprite_type = .player,
             .sprite_id = .idle_1,
             .bullet_sprite_id = null,
-            .collision_radius = 8.0,
+            .collision_bounds = .{ .circle = .{ .radius = 8.0 / 224.0 } }, // Convert pixels to normalized
             .collision_layer = .player,
             .collision_enabled = true,
             .health = 1,
@@ -83,7 +83,7 @@ pub const EntityManager = struct {
             .sprite_type = sprite_type,
             .sprite_id = .idle_1,
             .bullet_sprite_id = null,
-            .collision_radius = 8.0,
+            .collision_bounds = .{ .circle = .{ .radius = 8.0 / 224.0 } }, // Convert pixels to normalized
             .collision_layer = .enemy,
             .collision_enabled = true,
             .health = health,
@@ -127,7 +127,7 @@ pub const EntityManager = struct {
             .sprite_type = null,
             .sprite_id = null,
             .bullet_sprite_id = bullet_sprite,
-            .collision_radius = 2.0,
+            .collision_bounds = .{ .circle = .{ .radius = 2.0 / 224.0 } }, // Convert pixels to normalized
             .collision_layer = projectile_layer,
             .collision_enabled = true,
             .health = 1,

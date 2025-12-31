@@ -5,10 +5,8 @@ const Entity = @import("../entities/entity.zig").Entity;
 const EntityManager = @import("../entities/entity_manager.zig").EntityManager;
 const EntityType = @import("../entities/entity.zig").EntityType;
 const CollisionLayer = @import("../entities/entity.zig").CollisionLayer;
-
+const c = @import("../constants.zig");
 pub const PlayerController = struct {
-    player_speed: f32 = 0.5, // Normalized units per second
-    shoot_cooldown: f32 = 0.01, // Seconds between shots
     current_cooldown: f32 = 0.0,
 
     const Self = @This();
@@ -35,16 +33,15 @@ pub const PlayerController = struct {
         }
 
         if (move_x != 0) {
-            player.position.x += move_x * self.player_speed * dt;
+            player.position.x += move_x * c.player.SPEED * dt;
 
-            const margin = 0.025;
-            player.position.x = @max(margin, @min(1.0 - margin, player.position.x));
+            player.position.x = @max(c.player.SIDE_MARGIN, @min(1.0 - c.player.SIDE_MARGIN, player.position.x));
         }
 
         if (ctx.input.isKeyPressed(.space) or ctx.input.isKeyPressed(.z)) {
             if (self.current_cooldown <= 0) {
                 try self.shoot(player, entity_manager, ctx);
-                self.current_cooldown = self.shoot_cooldown;
+                self.current_cooldown = c.player.SHOOT_COOLDOWN;
             }
         }
     }
@@ -59,7 +56,7 @@ pub const PlayerController = struct {
             }
         }
 
-        if (bullet_count >= 2) return;
+        if (bullet_count >= c.player.MAX_BULLETS) return;
 
         ctx.assets.playSound(.shoot);
 
@@ -70,7 +67,7 @@ pub const PlayerController = struct {
 
         const bullet_velocity = engine.types.Vec2{
             .x = 0,
-            .y = -0.8,
+            .y = -c.player.BULLET_SPEED,
         };
 
         _ = try entity_manager.spawnProjectile(

@@ -15,7 +15,7 @@ const SpriteExplosionSystem = @import("../../systems/sprite_explosion.zig").Spri
 const MovementSystem = @import("../../systems/movement.zig").MovementSystem;
 const PathFollowingSystem = @import("../../systems/path_following.zig").PathFollowingSystem;
 const FormationSystem = @import("../../systems/formation.zig").FormationSystem;
-const StageManager = @import("../../gameplay/stage_manager.zig").StageManager;
+const StageManager = @import("../../gameplay/stage/stage_manager.zig").StageManager;
 const DebugMode = @import("../../core/debug_mode.zig").DebugMode;
 const level_def = @import("../../gameplay/level_definition.zig");
 const FormationTransitionSystem = @import("../../systems/formation_transition.zig").FormationTransitionSystem;
@@ -31,7 +31,6 @@ pub const Playing = struct {
     formation_system: FormationSystem,
     stage_manager: StageManager,
     debug_mode: DebugMode,
-    player_id: ?u32,
     ctx: *Context,
 
     const Self = @This();
@@ -48,96 +47,79 @@ pub const Playing = struct {
             .formation_system = FormationSystem.init(),
             .stage_manager = StageManager.init(allocator, &level_def.stage_1),
             .debug_mode = DebugMode.init(allocator),
-            .player_id = null,
             .ctx = ctx,
         };
     }
 
     pub fn update(self: *Self, ctx: *Context, dt: f32, state: *GameState) !?GameMode {
-        self.debug_mode.update(ctx);
+        self.debug_mode.update(ctx, state);
 
         if (!self.debug_mode.shouldUpdate()) {
             return null;
         }
 
-        try self.stage_manager.update(ctx, &state.entity_manager, dt);
+        // Update stage manager (handles intro and wave spawning)
+        try self.stage_manager.update(ctx, state, dt);
 
-        if (self.stage_manager.isIntroComplete()) {
-            if (self.player_id == null) {
-                self.player_id = self.stage_manager.player_id;
-            }
-
+        // Only update gameplay systems after intro is complete
+        if (self.stage_manager.getState() != .intro) {
             // Get player entity and update
-            if (self.player_id) |player_id| {
+            if (self.stage_manager.getPlayerId()) |player_id| {
                 if (state.entity_manager.get(player_id)) |player| {
-                    // Update player controller
                     try self.player_controller.update(player, &state.entity_manager, ctx, dt);
                 }
             }
-        }
 
-        // Update path following for enemies
-        try self.path_following_system.update(state.entity_manager.getAll(), ctx, dt);
+            // Update path following for enemies
+            try self.path_following_system.update(state.entity_manager.getAll(), ctx, dt);
 
-        self.formation_transition_system.update(state.entity_manager.getAll(), &self.stage_manager, &self.formation_system, dt);
+            // Update formation transitions
+            self.formation_transition_system.update(
+                state.entity_manager.getAll(),
+                &self.stage_manager,
+                &self.formation_system,
+                dt,
+            );
 
-        // Update movement for all entities
-        MovementSystem.update(state.entity_manager.getAll(), &self.stage_manager, dt);
+            // Update movement for all entities
+            MovementSystem.update(state.entity_manager.getAll(), &self.stage_manager, dt);
 
-        // Update formation breathing
-        self.formation_system.update(state.entity_manager.getAll(), &self.stage_manager, dt);
+            // Update formation breathing
+            self.formation_system.update(state.entity_manager.getAll(), &self.stage_manager, dt);
 
-        // Check collisions
-        try self.collision_system.checkCollisions(state.entity_manager.getAll());
+            // Check collisions
+            try self.collision_system.checkCollisions(state.entity_manager.getAll());
 
-        // Process collisions
-        for (self.collision_system.getCollisions()) |collision| {
-            try self.handleCollision(collision, state, ctx);
-        }
+            // Process collisions
+            for (self.collision_system.getCollisions()) |collision| {
+                try self.handleCollision(collision, state, ctx);
+            }
 
-        // Update explosions
-        self.explosion_system.update(dt);
-        self.sprite_explosion_system.update(dt);
+            // Update explosions
+            self.explosion_system.update(dt);
+            self.sprite_explosion_system.update(dt);
 
-        // Clean up dead entities
-        state.entity_manager.compact();
+            // Clean up dead entities
+            state.entity_manager.compact();
 
-        // Check for game over
-        if (state.player_state.lives == 0) {
-            return .high_score;
+            // Check for game over
+            // if (player.lives == 0) {
+            //     return .high_score;
+            // }
         }
 
         return null;
     }
 
     pub fn draw(self: *Self, ctx: *Context, state: *GameState) !void {
-        if (!self.stage_manager.isIntroComplete()) {
-            switch (self.stage_manager.getIntroState()) {
-                .player_ready => {
-                    const text = "PLAYER 1";
-                    ctx.renderer.text.drawTextCentered(text, 0.5, 10, engine.types.Color.sky_blue);
-                },
-                .stage_ready => {
-                    const stage_text = "STAGE 1";
-                    ctx.renderer.text.drawTextCentered(stage_text, 0.5, 10, engine.types.Color.sky_blue);
-                },
-                .player_spawn => {
-                    // Player is spawned, draw normally but no enemies yet
-                    // Fall through to normal entity rendering
-                },
-                .complete => {
-                    // Should never reach here, but fall through to normal rendering
-                },
-            }
-        }
+        // Let stage manager handle intro drawing
+        self.stage_manager.draw(ctx, state);
 
-        // Only draw entities during player_spawn and after intro is complete
-        if (self.stage_manager.getIntroState() == .player_spawn or
-            self.stage_manager.isIntroComplete())
-        {
-            // Draw all entities
+        // Draw entities during gameplay
+        if (self.stage_manager.getState() != .intro) {
             for (state.entity_manager.getAll()) |entity| {
                 if (!entity.active) continue;
+
                 if (entity.type == .projectile) {
                     // Draw projectiles using bullet sprites
                     if (entity.bullet_sprite_id) |bullet_id| {
@@ -171,6 +153,7 @@ pub const Playing = struct {
                     }
                 }
             }
+
             // Draw explosions
             self.explosion_system.draw(ctx);
             self.sprite_explosion_system.draw(ctx, state);
@@ -196,7 +179,7 @@ pub const Playing = struct {
         var entity_a = state.entity_manager.get(collision.entity_a) orelse return;
         var entity_b = state.entity_manager.get(collision.entity_b) orelse return;
 
-        // Determine what hit what
+        var player = state.getActivePlayerMut() orelse return;
         const is_player_hit = entity_a.collision_layer == .player or entity_b.collision_layer == .player;
         const is_enemy_hit = entity_a.collision_layer == .enemy or entity_b.collision_layer == .enemy;
         const is_player_projectile = entity_a.collision_layer == .player_projectile or entity_b.collision_layer == .player_projectile;
@@ -213,20 +196,6 @@ pub const Playing = struct {
         if (entity_b.type == .boss and entity_b.health == 1) {
             entity_b.sprite_type = .boss_alt;
             ctx.assets.playSound(.hit_boss);
-        }
-
-        if (is_enemy_hit and is_player_projectile) {
-            const enemy = if (entity_a.collision_layer == .enemy) entity_a else entity_b;
-            if (enemy.health <= 0) {
-                const is_flying = enemy.behavior != .formation_idle;
-                const points: u32 = switch (enemy.type) {
-                    .boss => if (is_flying) 400 else 150,
-                    .goei => if (is_flying) 160 else 80,
-                    .zako => if (is_flying) 100 else 50,
-                    else => 0,
-                };
-                state.player_state.score += points;
-            }
         }
 
         // Handle entity deaths
@@ -252,35 +221,35 @@ pub const Playing = struct {
         // Award points for killing enemies
         if (is_enemy_hit and is_player_projectile) {
             const enemy = if (entity_a.collision_layer == .enemy) entity_a else entity_b;
-            if (enemy.health <= 0) { // Only award points when enemy dies
+            if (enemy.health <= 0) {
+                const is_flying = enemy.behavior != .formation_idle;
                 const points: u32 = switch (enemy.type) {
-                    .boss => 150,
-                    .goei => 80,
-                    .zako => 50,
+                    .boss => if (is_flying) 400 else 150,
+                    .goei => if (is_flying) 160 else 80,
+                    .zako => if (is_flying) 100 else 50,
                     else => 0,
                 };
-                state.player_state.score += points;
-                self.ctx.logger.info("[PlayingMode] Adding {} to score {}", .{ points, state.player_state.score });
+                player.score += points;
+                self.ctx.logger.info("[PlayingMode] Adding {} to score {}", .{ points, player.score });
             }
         }
 
         // Handle player death
         if (is_player_hit) {
-            if (state.player_state.lives > 0) {
-                state.player_state.lives -= 1;
+            if (player.lives > 0) {
+                player.lives -= 1;
             }
-            self.player_id = null;
         }
     }
 
     fn spawnExplosionFor(self: *Self, entity: *Entity, _: *GameState, ctx: *Context) !void {
-        // Play death sound based on entity type (only when actually dying)
+        // Play death sound based on entity type
         switch (entity.type) {
             .player => ctx.assets.playSound(.die_player),
             .boss => ctx.assets.playSound(.die_boss),
             .goei => ctx.assets.playSound(.die_goei),
             .zako => ctx.assets.playSound(.die_zako),
-            .projectile => {}, // No sound for projectiles
+            .projectile => {},
         }
 
         // Spawn sprite explosion
@@ -288,7 +257,6 @@ pub const Playing = struct {
             .player => try self.sprite_explosion_system.spawnPlayerExplosion(entity.position),
             .boss, .goei, .zako => try self.sprite_explosion_system.spawnEnemyExplosion(entity.position),
             .projectile => {
-                // Projectiles just get particle effects
                 const particle_count: u32 = 5;
                 try self.explosion_system.spawnExplosion(entity.position, engine.types.Color.yellow, particle_count);
             },

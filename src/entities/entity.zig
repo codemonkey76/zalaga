@@ -1,6 +1,7 @@
 const std = @import("std");
 const engine = @import("engine");
 const PathAsset = @import("../assets/path_asset.zig").PathAsset;
+const CollisionBounds = engine.collision.CollisionBounds;
 
 pub const EntityId = u32;
 
@@ -47,7 +48,7 @@ pub const Entity = struct {
     bullet_sprite_id: ?BulletSpriteId,
 
     // Collision
-    collision_radius: f32,
+    collision_bounds: CollisionBounds,
     collision_layer: CollisionLayer,
     collision_enabled: bool,
 
@@ -67,6 +68,17 @@ pub const Entity = struct {
     formation_transition_start_angle: f32 = 0,
 
     const Self = @This();
+
+    pub fn boundsFromSprite(sprite_width: f32, sprite_height: f32, scale: f32) CollisionBounds {
+        return .{ .rectangle = .{
+            .width = sprite_width * scale,
+            .height = sprite_height * scale,
+        } };
+    }
+
+    pub fn boundsFromRadius(radius: f32) CollisionBounds {
+        return .{ .circle = .{ .radius = radius } };
+    }
 
     pub fn isMoving(self: Self) bool {
         return self.behavior == .path_following or

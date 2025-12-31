@@ -48,8 +48,13 @@ pub const CollisionSystem = struct {
                     continue;
                 }
 
-                // Narrow phase: circle collision
-                if (self.checkCircleCollision(entity_a, entity_b)) {
+                // Use engine's collision detection
+                if (engine.collision.checkCollision(
+                    entity_a.position,
+                    entity_a.collision_bounds,
+                    entity_b.position,
+                    entity_b.collision_bounds,
+                )) {
                     try self.collisions.append(self.allocator, .{
                         .entity_a = entity_a.id,
                         .entity_b = entity_b.id,
@@ -76,32 +81,15 @@ pub const CollisionSystem = struct {
         return self.collisions.items;
     }
 
-    /// Check if two entities overlap (circle collision)
-    fn checkCircleCollision(self: *Self, entity_a: *Entity, entity_b: *Entity) bool {
-        _ = self;
-        
-        const dx = entity_a.position.x - entity_b.position.x;
-        const dy = entity_a.position.y - entity_b.position.y;
-        const distance_sq = dx * dx + dy * dy;
-
-        // Convert radius from pixels to normalized coordinates (assuming 224x288 virtual res)
-        const scale = 1.0 / 224.0; // Normalize to screen space
-        const radius_a = entity_a.collision_radius * scale;
-        const radius_b = entity_b.collision_radius * scale;
-        const combined_radius = radius_a + radius_b;
-
-        return distance_sq < (combined_radius * combined_radius);
-    }
-
     /// Check if specific entity collides with any in layer
     pub fn checkEntityVsLayer(
         self: *Self,
-        entity: *Entity,
+        entity: *const Entity,
         entities: []Entity,
         target_layer: CollisionLayer,
     ) ?EntityId {
         _ = self;
-        
+
         if (!entity.collision_enabled) return null;
         if (!shouldCheckCollision(entity.collision_layer, target_layer)) return null;
 
@@ -110,16 +98,12 @@ pub const CollisionSystem = struct {
             if (other.collision_layer != target_layer) continue;
             if (other.id == entity.id) continue;
 
-            const dx = entity.position.x - other.position.x;
-            const dy = entity.position.y - other.position.y;
-            const distance_sq = dx * dx + dy * dy;
-
-            const scale = 1.0 / 224.0;
-            const radius_a = entity.collision_radius * scale;
-            const radius_b = other.collision_radius * scale;
-            const combined_radius = radius_a + radius_b;
-
-            if (distance_sq < (combined_radius * combined_radius)) {
+            if (engine.collision.checkCollision(
+                entity.position,
+                entity.collision_bounds,
+                other.position,
+                other.collision_bounds,
+            )) {
                 return other.id;
             }
         }

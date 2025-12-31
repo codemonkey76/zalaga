@@ -3,18 +3,31 @@ const engine = @import("engine");
 const Context = @import("../../mod.zig").Context;
 const GameMode = @import("../mode.zig").GameMode;
 const GameState = @import("../../core/game_state.zig").GameState;
+const c = @import("../../constants.zig");
+const PlayerState = @import("../../gameplay/player_state.zig").PlayerState;
 
 pub const StartScreen = struct {
+    allocator: std.mem.Allocator,
     const Self = @This();
 
     pub fn update(self: *Self, ctx: *Context, dt: f32, state: *GameState) !?GameMode {
-        _ = self;
         _ = dt;
 
         // Press 1 to start 1-player game
         if (ctx.input.isKeyPressed(.one) and state.credits > 0) {
             state.credits -= 1;
-            ctx.assets.playSound(.intro);
+            state.player1 = PlayerState.init(self.allocator);
+            state.player2 = null;
+            state.active_player = .player1;
+            return .playing;
+        }
+
+        // Press 2 to start 2-player game
+        if (ctx.input.isKeyPressed(.two) and state.credits >= 2) {
+            state.credits -= 2;
+            state.player1 = PlayerState.init(self.allocator);
+            state.player2 = PlayerState.init(self.allocator);
+            state.active_player = .player1;
             return .playing;
         }
 
@@ -44,9 +57,9 @@ pub const StartScreen = struct {
         _ = ctx;
     }
 
-    pub fn init(allocator: std.mem.Allocator, ctx: *Context) !Self {
-        _ = allocator;
-        _ = ctx;
-        return .{};
+    pub fn init(allocator: std.mem.Allocator) Self {
+        return .{
+            .allocator = allocator,
+        };
     }
 };

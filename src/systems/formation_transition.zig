@@ -2,14 +2,13 @@ const std = @import("std");
 const engine = @import("engine");
 const Entity = @import("../entities/entity.zig").Entity;
 const Context = @import("../mod.zig").Context;
-const StageManager = @import("../gameplay/stage_manager.zig").StageManager;
+const StageManager = @import("../gameplay/stage/stage_manager.zig").StageManager;
 const FormationSystem = @import("./formation.zig").FormationSystem;
+const c = @import("../constants.zig");
 
 /// System for smoothly transitioning enemies from path end to formation position
 pub const FormationTransitionSystem = struct {
     const Self = @This();
-
-    const TRANSITION_DURATION: f32 = 0.5; // seconds
 
     pub fn init(_: std.mem.Allocator) Self {
         return .{};
@@ -28,7 +27,7 @@ pub const FormationTransitionSystem = struct {
             const target_pos = formation_system.getCurrentFormationPosition(base_target);
 
             // Advance transition
-            entity.formation_transition_t += dt / TRANSITION_DURATION;
+            entity.formation_transition_t += dt / c.formation.TRANSITION_TIME;
 
             if (entity.formation_transition_t >= 1.0) {
                 // Transition complete
